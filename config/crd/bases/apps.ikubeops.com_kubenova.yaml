@@ -1,0 +1,2395 @@
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.19.0
+  name: kubenova.apps.ikubeops.com
+spec:
+  group: apps.ikubeops.com
+  names:
+    kind: KubeNova
+    listKind: KubeNovaList
+    plural: kubenova
+    shortNames:
+    - kn
+    singular: kubenova
+  scope: Namespaced
+  versions:
+  - additionalPrinterColumns:
+    - jsonPath: .status.phase
+      name: 阶段
+      type: string
+    - jsonPath: .status.componentStatus.web.state
+      name: Web
+      type: string
+    - jsonPath: .status.accessInfo.webURL
+      name: 访问地址
+      type: string
+    - jsonPath: .metadata.creationTimestamp
+      name: 运行时长
+      type: date
+    name: v1
+    schema:
+      openAPIV3Schema:
+        description: KubeNova is the Schema for the KubeNova API
+        properties:
+          apiVersion:
+            description: |-
+              APIVersion defines the versioned schema of this representation of an object.
+              Servers should convert recognized schemas to the latest internal value, and
+              may reject unrecognized values.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
+            type: string
+          kind:
+            description: |-
+              Kind is a string value representing the REST resource this object represents.
+              Servers may infer this from the endpoint the client submits requests to.
+              Cannot be updated.
+              In CamelCase.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: KubeNovaSpec 定义了 KubeNova 的期望状态
+            properties:
+              cache:
+                description: Cache 缓存配置(Redis)
+                properties:
+                  host:
+                    description: Host Redis 主机地址，例如：redis.default.svc.cluster.local
+                    type: string
+                  nonBlock:
+                    default: true
+                    description: NonBlock 是否使用非阻塞模式
+                    type: boolean
+                  password:
+                    description: Password Redis 密码(可选，如果 Redis 无密码可不填)
+                    type: string
+                  pingTimeout:
+                    default: 3s
+                    description: PingTimeout Ping 超时时间
+                    type: string
+                  port:
+                    default: 6379
+                    description: Port Redis 端口
+                    format: int32
+                    maximum: 65535
+                    minimum: 1
+                    type: integer
+                  tls:
+                    default: false
+                    description: TLS 是否启用 TLS 连接
+                    type: boolean
+                  type:
+                    default: node
+                    description: Type Redis 类型：node(单机)或 cluster(集群)
+                    enum:
+                    - node
+                    - cluster
+                    type: string
+                required:
+                - host
+                type: object
+              database:
+                description: Database 数据库配置(MySQL)
+                properties:
+                  connMaxLifetime:
+                    default: 30m
+                    description: ConnMaxLifetime 连接最大生命周期(例如：30m, 1h)
+                    type: string
+                  database:
+                    description: Database 数据库名称
+                    type: string
+                  host:
+                    description: Host 数据库主机地址，例如：mysql.default.svc.cluster.local
+                    type: string
+                  maxIdleConns:
+                    default: 50
+                    description: MaxIdleConns 最大空闲连接数
+                    format: int32
+                    maximum: 500
+                    minimum: 1
+                    type: integer
+                  maxOpenConns:
+                    default: 100
+                    description: MaxOpenConns 最大打开连接数
+                    format: int32
+                    maximum: 1000
+                    minimum: 1
+                    type: integer
+                  password:
+                    description: Password 数据库密码(明文，Operator 会自动存储到 Secret)
+                    minLength: 1
+                    type: string
+                  port:
+                    default: 3306
+                    description: Port 数据库端口
+                    format: int32
+                    maximum: 65535
+                    minimum: 1
+                    type: integer
+                  user:
+                    description: User 数据库用户名
+                    type: string
+                required:
+                - database
+                - host
+                - password
+                - user
+                type: object
+              imageRegistry:
+                description: ImageRegistry 全局镜像仓库配置
+                properties:
+                  organization:
+                    default: kube-nova
+                    description: Organization 组织/项目名称
+                    type: string
+                  pullPolicy:
+                    default: Always
+                    description: PullPolicy 镜像拉取策略
+                    enum:
+                    - Always
+                    - IfNotPresent
+                    - Never
+                    type: string
+                  pullSecrets:
+                    description: PullSecrets 镜像拉取密钥列表(Secret 名称)
+                    items:
+                      type: string
+                    type: array
+                  registry:
+                    default: registry.cn-hangzhou.aliyuncs.com
+                    description: Registry 镜像仓库地址，例如：registry.cn-hangzhou.aliyuncs.com
+                    type: string
+                  tag:
+                    default: latest
+                    description: Tag 默认镜像标签
+                    type: string
+                type: object
+              services:
+                description: Services 后端服务配置
+                properties:
+                  consoleAPI:
+                    description: ConsoleAPI Console API 服务配置
+                    properties:
+                      enabled:
+                        default: true
+                        description: Enabled 是否启用此服务
+                        type: boolean
+                      env:
+                        description: Env 额外的环境变量
+                        items:
+                          description: EnvVar represents an environment variable present
+                            in a Container.
+                          properties:
+                            name:
+                              description: |-
+                                Name of the environment variable.
+                                May consist of any printable ASCII characters except '='.
+                              type: string
+                            value:
+                              description: |-
+                                Variable references $(VAR_NAME) are expanded
+                                using the previously defined environment variables in the container and
+                                any service environment variables. If a variable cannot be resolved,
+                                the reference in the input string will be unchanged. Double $$ are reduced
+                                to a single $, which allows for escaping the $(VAR_NAME) syntax: i.e.
+                                "$$(VAR_NAME)" will produce the string literal "$(VAR_NAME)".
+                                Escaped references will never be expanded, regardless of whether the variable
+                                exists or not.
+                                Defaults to "".
+                              type: string
+                            valueFrom:
+                              description: Source for the environment variable's value.
+                                Cannot be used if value is not empty.
+                              properties:
+                                configMapKeyRef:
+                                  description: Selects a key of a ConfigMap.
+                                  properties:
+                                    key:
+                                      description: The key to select.
+                                      type: string
+                                    name:
+                                      default: ""
+                                      description: |-
+                                        Name of the referent.
+                                        This field is effectively required, but due to backwards compatibility is
+                                        allowed to be empty. Instances of this type with an empty value here are
+                                        almost certainly wrong.
+                                        More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                                      type: string
+                                    optional:
+                                      description: Specify whether the ConfigMap or
+                                        its key must be defined
+                                      type: boolean
+                                  required:
+                                  - key
+                                  type: object
+                                  x-kubernetes-map-type: atomic
+                                fieldRef:
+                                  description: |-
+                                    Selects a field of the pod: supports metadata.name, metadata.namespace, `metadata.labels['<KEY>']`, `metadata.annotations['<KEY>']`,
+                                    spec.nodeName, spec.serviceAccountName, status.hostIP, status.podIP, status.podIPs.
+                                  properties:
+                                    apiVersion:
+                                      description: Version of the schema the FieldPath
+                                        is written in terms of, defaults to "v1".
+                                      type: string
+                                    fieldPath:
+                                      description: Path of the field to select in
+                                        the specified API version.
+                                      type: string
+                                  required:
+                                  - fieldPath
+                                  type: object
+                                  x-kubernetes-map-type: atomic
+                                fileKeyRef:
+                                  description: |-
+                                    FileKeyRef selects a key of the env file.
+                                    Requires the EnvFiles feature gate to be enabled.
+                                  properties:
+                                    key:
+                                      description: |-
+                                        The key within the env file. An invalid key will prevent the pod from starting.
+                                        The keys defined within a source may consist of any printable ASCII characters except '='.
+                                        During Alpha stage of the EnvFiles feature gate, the key size is limited to 128 characters.
+                                      type: string
+                                    optional:
+                                      default: false
+                                      description: |-
+                                        Specify whether the file or its key must be defined. If the file or key
+                                        does not exist, then the env var is not published.
+                                        If optional is set to true and the specified key does not exist,
+                                        the environment variable will not be set in the Pod's containers.
+
+                                        If optional is set to false and the specified key does not exist,
+                                        an error will be returned during Pod creation.
+                                      type: boolean
+                                    path:
+                                      description: |-
+                                        The path within the volume from which to select the file.
+                                        Must be relative and may not contain the '..' path or start with '..'.
+                                      type: string
+                                    volumeName:
+                                      description: The name of the volume mount containing
+                                        the env file.
+                                      type: string
+                                  required:
+                                  - key
+                                  - path
+                                  - volumeName
+                                  type: object
+                                  x-kubernetes-map-type: atomic
+                                resourceFieldRef:
+                                  description: |-
+                                    Selects a resource of the container: only resources limits and requests
+                                    (limits.cpu, limits.memory, limits.ephemeral-storage, requests.cpu, requests.memory and requests.ephemeral-storage) are currently supported.
+                                  properties:
+                                    containerName:
+                                      description: 'Container name: required for volumes,
+                                        optional for env vars'
+                                      type: string
+                                    divisor:
+                                      anyOf:
+                                      - type: integer
+                                      - type: string
+                                      description: Specifies the output format of
+                                        the exposed resources, defaults to "1"
+                                      pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                                      x-kubernetes-int-or-string: true
+                                    resource:
+                                      description: 'Required: resource to select'
+                                      type: string
+                                  required:
+                                  - resource
+                                  type: object
+                                  x-kubernetes-map-type: atomic
+                                secretKeyRef:
+                                  description: Selects a key of a secret in the pod's
+                                    namespace
+                                  properties:
+                                    key:
+                                      description: The key of the secret to select
+                                        from.  Must be a valid secret key.
+                                      type: string
+                                    name:
+                                      default: ""
+                                      description: |-
+                                        Name of the referent.
+                                        This field is effectively required, but due to backwards compatibility is
+                                        allowed to be empty. Instances of this type with an empty value here are
+                                        almost certainly wrong.
+                                        More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                                      type: string
+                                    optional:
+                                      description: Specify whether the Secret or its
+                                        key must be defined
+                                      type: boolean
+                                  required:
+                                  - key
+                                  type: object
+                                  x-kubernetes-map-type: atomic
+                              type: object
+                          required:
+                          - name
+                          type: object
+                        type: array
+                      image:
+                        description: |-
+                          Image 完整镜像名称(如果需要覆盖全局配置)
+                          例如：registry.cn-hangzhou.aliyuncs.com/kube-nova/portal-api:v1.0.0
+                        type: string
+                      replicas:
+                        default: 2
+                        description: Replicas 副本数
+                        format: int32
+                        maximum: 100
+                        minimum: 1
+                        type: integer
+                      resources:
+                        description: Resources 资源配置
+                        properties:
+                          claims:
+                            description: |-
+                              Claims lists the names of resources, defined in spec.resourceClaims,
+                              that are used by this container.
+
+                              This field depends on the
+                              DynamicResourceAllocation feature gate.
+
+                              This field is immutable. It can only be set for containers.
+                            items:
+                              description: ResourceClaim references one entry in PodSpec.ResourceClaims.
+                              properties:
+                                name:
+                                  description: |-
+                                    Name must match the name of one entry in pod.spec.resourceClaims of
+                                    the Pod where this field is used. It makes that resource available
+                                    inside a container.
+                                  type: string
+                                request:
+                                  description: |-
+                                    Request is the name chosen for a request in the referenced claim.
+                                    If empty, everything from the claim is made available, otherwise
+                                    only the result of this request.
+                                  type: string
+                              required:
+                              - name
+                              type: object
+                            type: array
+                            x-kubernetes-list-map-keys:
+                            - name
+                            x-kubernetes-list-type: map
+                          limits:
+                            additionalProperties:
+                              anyOf:
+                              - type: integer
+                              - type: string
+                              pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                              x-kubernetes-int-or-string: true
+                            description: |-
+                              Limits describes the maximum amount of compute resources allowed.
+                              More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
+                            type: object
+                          requests:
+                            additionalProperties:
+                              anyOf:
+                              - type: integer
+                              - type: string
+                              pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                              x-kubernetes-int-or-string: true
+                            description: |-
+                              Requests describes the minimum amount of compute resources required.
+                              If Requests is omitted for a container, it defaults to Limits if that is explicitly specified,
+                              otherwise to an implementation-defined value. Requests cannot exceed Limits.
+                              More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
+                            type: object
+                        type: object
+                    type: object
+                  consoleRPC:
+                    description: ConsoleRPC Console RPC 服务配置
+                    properties:
+                      enabled:
+                        default: true
+                        description: Enabled 是否启用此服务
+                        type: boolean
+                      env:
+                        description: Env 额外的环境变量
+                        items:
+                          description: EnvVar represents an environment variable present
+                            in a Container.
+                          properties:
+                            name:
+                              description: |-
+                                Name of the environment variable.
+                                May consist of any printable ASCII characters except '='.
+                              type: string
+                            value:
+                              description: |-
+                                Variable references $(VAR_NAME) are expanded
+                                using the previously defined environment variables in the container and
+                                any service environment variables. If a variable cannot be resolved,
+                                the reference in the input string will be unchanged. Double $$ are reduced
+                                to a single $, which allows for escaping the $(VAR_NAME) syntax: i.e.
+                                "$$(VAR_NAME)" will produce the string literal "$(VAR_NAME)".
+                                Escaped references will never be expanded, regardless of whether the variable
+                                exists or not.
+                                Defaults to "".
+                              type: string
+                            valueFrom:
+                              description: Source for the environment variable's value.
+                                Cannot be used if value is not empty.
+                              properties:
+                                configMapKeyRef:
+                                  description: Selects a key of a ConfigMap.
+                                  properties:
+                                    key:
+                                      description: The key to select.
+                                      type: string
+                                    name:
+                                      default: ""
+                                      description: |-
+                                        Name of the referent.
+                                        This field is effectively required, but due to backwards compatibility is
+                                        allowed to be empty. Instances of this type with an empty value here are
+                                        almost certainly wrong.
+                                        More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                                      type: string
+                                    optional:
+                                      description: Specify whether the ConfigMap or
+                                        its key must be defined
+                                      type: boolean
+                                  required:
+                                  - key
+                                  type: object
+                                  x-kubernetes-map-type: atomic
+                                fieldRef:
+                                  description: |-
+                                    Selects a field of the pod: supports metadata.name, metadata.namespace, `metadata.labels['<KEY>']`, `metadata.annotations['<KEY>']`,
+                                    spec.nodeName, spec.serviceAccountName, status.hostIP, status.podIP, status.podIPs.
+                                  properties:
+                                    apiVersion:
+                                      description: Version of the schema the FieldPath
+                                        is written in terms of, defaults to "v1".
+                                      type: string
+                                    fieldPath:
+                                      description: Path of the field to select in
+                                        the specified API version.
+                                      type: string
+                                  required:
+                                  - fieldPath
+                                  type: object
+                                  x-kubernetes-map-type: atomic
+                                fileKeyRef:
+                                  description: |-
+                                    FileKeyRef selects a key of the env file.
+                                    Requires the EnvFiles feature gate to be enabled.
+                                  properties:
+                                    key:
+                                      description: |-
+                                        The key within the env file. An invalid key will prevent the pod from starting.
+                                        The keys defined within a source may consist of any printable ASCII characters except '='.
+                                        During Alpha stage of the EnvFiles feature gate, the key size is limited to 128 characters.
+                                      type: string
+                                    optional:
+                                      default: false
+                                      description: |-
+                                        Specify whether the file or its key must be defined. If the file or key
+                                        does not exist, then the env var is not published.
+                                        If optional is set to true and the specified key does not exist,
+                                        the environment variable will not be set in the Pod's containers.
+
+                                        If optional is set to false and the specified key does not exist,
+                                        an error will be returned during Pod creation.
+                                      type: boolean
+                                    path:
+                                      description: |-
+                                        The path within the volume from which to select the file.
+                                        Must be relative and may not contain the '..' path or start with '..'.
+                                      type: string
+                                    volumeName:
+                                      description: The name of the volume mount containing
+                                        the env file.
+                                      type: string
+                                  required:
+                                  - key
+                                  - path
+                                  - volumeName
+                                  type: object
+                                  x-kubernetes-map-type: atomic
+                                resourceFieldRef:
+                                  description: |-
+                                    Selects a resource of the container: only resources limits and requests
+                                    (limits.cpu, limits.memory, limits.ephemeral-storage, requests.cpu, requests.memory and requests.ephemeral-storage) are currently supported.
+                                  properties:
+                                    containerName:
+                                      description: 'Container name: required for volumes,
+                                        optional for env vars'
+                                      type: string
+                                    divisor:
+                                      anyOf:
+                                      - type: integer
+                                      - type: string
+                                      description: Specifies the output format of
+                                        the exposed resources, defaults to "1"
+                                      pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                                      x-kubernetes-int-or-string: true
+                                    resource:
+                                      description: 'Required: resource to select'
+                                      type: string
+                                  required:
+                                  - resource
+                                  type: object
+                                  x-kubernetes-map-type: atomic
+                                secretKeyRef:
+                                  description: Selects a key of a secret in the pod's
+                                    namespace
+                                  properties:
+                                    key:
+                                      description: The key of the secret to select
+                                        from.  Must be a valid secret key.
+                                      type: string
+                                    name:
+                                      default: ""
+                                      description: |-
+                                        Name of the referent.
+                                        This field is effectively required, but due to backwards compatibility is
+                                        allowed to be empty. Instances of this type with an empty value here are
+                                        almost certainly wrong.
+                                        More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                                      type: string
+                                    optional:
+                                      description: Specify whether the Secret or its
+                                        key must be defined
+                                      type: boolean
+                                  required:
+                                  - key
+                                  type: object
+                                  x-kubernetes-map-type: atomic
+                              type: object
+                          required:
+                          - name
+                          type: object
+                        type: array
+                      image:
+                        description: |-
+                          Image 完整镜像名称(如果需要覆盖全局配置)
+                          例如：registry.cn-hangzhou.aliyuncs.com/kube-nova/portal-api:v1.0.0
+                        type: string
+                      replicas:
+                        default: 2
+                        description: Replicas 副本数
+                        format: int32
+                        maximum: 100
+                        minimum: 1
+                        type: integer
+                      resources:
+                        description: Resources 资源配置
+                        properties:
+                          claims:
+                            description: |-
+                              Claims lists the names of resources, defined in spec.resourceClaims,
+                              that are used by this container.
+
+                              This field depends on the
+                              DynamicResourceAllocation feature gate.
+
+                              This field is immutable. It can only be set for containers.
+                            items:
+                              description: ResourceClaim references one entry in PodSpec.ResourceClaims.
+                              properties:
+                                name:
+                                  description: |-
+                                    Name must match the name of one entry in pod.spec.resourceClaims of
+                                    the Pod where this field is used. It makes that resource available
+                                    inside a container.
+                                  type: string
+                                request:
+                                  description: |-
+                                    Request is the name chosen for a request in the referenced claim.
+                                    If empty, everything from the claim is made available, otherwise
+                                    only the result of this request.
+                                  type: string
+                              required:
+                              - name
+                              type: object
+                            type: array
+                            x-kubernetes-list-map-keys:
+                            - name
+                            x-kubernetes-list-type: map
+                          limits:
+                            additionalProperties:
+                              anyOf:
+                              - type: integer
+                              - type: string
+                              pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                              x-kubernetes-int-or-string: true
+                            description: |-
+                              Limits describes the maximum amount of compute resources allowed.
+                              More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
+                            type: object
+                          requests:
+                            additionalProperties:
+                              anyOf:
+                              - type: integer
+                              - type: string
+                              pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                              x-kubernetes-int-or-string: true
+                            description: |-
+                              Requests describes the minimum amount of compute resources required.
+                              If Requests is omitted for a container, it defaults to Limits if that is explicitly specified,
+                              otherwise to an implementation-defined value. Requests cannot exceed Limits.
+                              More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
+                            type: object
+                        type: object
+                    type: object
+                  globalTimeout:
+                    default: 30000
+                    description: GlobalTimeout 全局超时时间(毫秒)
+                    format: int64
+                    type: integer
+                  injectImage:
+                    default: registry.cn-hangzhou.aliyuncs.com/kube-nova/network-multitool:latest
+                    description: InjectImage 注入容器使用的工具镜像
+                    type: string
+                  jwt:
+                    description: JWT JWT 配置
+                    properties:
+                      accessExpire:
+                        default: 86400
+                        description: AccessExpire 访问令牌过期时间(秒)
+                        format: int64
+                        type: integer
+                      accessSecret:
+                        description: AccessSecret 访问令牌密钥(至少 32 字符)
+                        minLength: 32
+                        type: string
+                      refreshAfter:
+                        default: 604800
+                        description: RefreshAfter 刷新令牌生效时间(秒)
+                        format: int64
+                        type: integer
+                      refreshExpire:
+                        default: 604800
+                        description: RefreshExpire 刷新令牌过期时间(秒)
+                        format: int64
+                        type: integer
+                      refreshSecret:
+                        description: RefreshSecret 刷新令牌密钥(至少 32 字符)
+                        minLength: 32
+                        type: string
+                    required:
+                    - accessSecret
+                    - refreshSecret
+                    type: object
+                  managerAPI:
+                    description: ManagerAPI Manager API 服务配置
+                    properties:
+                      enabled:
+                        default: true
+                        description: Enabled 是否启用此服务
+                        type: boolean
+                      env:
+                        description: Env 额外的环境变量
+                        items:
+                          description: EnvVar represents an environment variable present
+                            in a Container.
+                          properties:
+                            name:
+                              description: |-
+                                Name of the environment variable.
+                                May consist of any printable ASCII characters except '='.
+                              type: string
+                            value:
+                              description: |-
+                                Variable references $(VAR_NAME) are expanded
+                                using the previously defined environment variables in the container and
+                                any service environment variables. If a variable cannot be resolved,
+                                the reference in the input string will be unchanged. Double $$ are reduced
+                                to a single $, which allows for escaping the $(VAR_NAME) syntax: i.e.
+                                "$$(VAR_NAME)" will produce the string literal "$(VAR_NAME)".
+                                Escaped references will never be expanded, regardless of whether the variable
+                                exists or not.
+                                Defaults to "".
+                              type: string
+                            valueFrom:
+                              description: Source for the environment variable's value.
+                                Cannot be used if value is not empty.
+                              properties:
+                                configMapKeyRef:
+                                  description: Selects a key of a ConfigMap.
+                                  properties:
+                                    key:
+                                      description: The key to select.
+                                      type: string
+                                    name:
+                                      default: ""
+                                      description: |-
+                                        Name of the referent.
+                                        This field is effectively required, but due to backwards compatibility is
+                                        allowed to be empty. Instances of this type with an empty value here are
+                                        almost certainly wrong.
+                                        More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                                      type: string
+                                    optional:
+                                      description: Specify whether the ConfigMap or
+                                        its key must be defined
+                                      type: boolean
+                                  required:
+                                  - key
+                                  type: object
+                                  x-kubernetes-map-type: atomic
+                                fieldRef:
+                                  description: |-
+                                    Selects a field of the pod: supports metadata.name, metadata.namespace, `metadata.labels['<KEY>']`, `metadata.annotations['<KEY>']`,
+                                    spec.nodeName, spec.serviceAccountName, status.hostIP, status.podIP, status.podIPs.
+                                  properties:
+                                    apiVersion:
+                                      description: Version of the schema the FieldPath
+                                        is written in terms of, defaults to "v1".
+                                      type: string
+                                    fieldPath:
+                                      description: Path of the field to select in
+                                        the specified API version.
+                                      type: string
+                                  required:
+                                  - fieldPath
+                                  type: object
+                                  x-kubernetes-map-type: atomic
+                                fileKeyRef:
+                                  description: |-
+                                    FileKeyRef selects a key of the env file.
+                                    Requires the EnvFiles feature gate to be enabled.
+                                  properties:
+                                    key:
+                                      description: |-
+                                        The key within the env file. An invalid key will prevent the pod from starting.
+                                        The keys defined within a source may consist of any printable ASCII characters except '='.
+                                        During Alpha stage of the EnvFiles feature gate, the key size is limited to 128 characters.
+                                      type: string
+                                    optional:
+                                      default: false
+                                      description: |-
+                                        Specify whether the file or its key must be defined. If the file or key
+                                        does not exist, then the env var is not published.
+                                        If optional is set to true and the specified key does not exist,
+                                        the environment variable will not be set in the Pod's containers.
+
+                                        If optional is set to false and the specified key does not exist,
+                                        an error will be returned during Pod creation.
+                                      type: boolean
+                                    path:
+                                      description: |-
+                                        The path within the volume from which to select the file.
+                                        Must be relative and may not contain the '..' path or start with '..'.
+                                      type: string
+                                    volumeName:
+                                      description: The name of the volume mount containing
+                                        the env file.
+                                      type: string
+                                  required:
+                                  - key
+                                  - path
+                                  - volumeName
+                                  type: object
+                                  x-kubernetes-map-type: atomic
+                                resourceFieldRef:
+                                  description: |-
+                                    Selects a resource of the container: only resources limits and requests
+                                    (limits.cpu, limits.memory, limits.ephemeral-storage, requests.cpu, requests.memory and requests.ephemeral-storage) are currently supported.
+                                  properties:
+                                    containerName:
+                                      description: 'Container name: required for volumes,
+                                        optional for env vars'
+                                      type: string
+                                    divisor:
+                                      anyOf:
+                                      - type: integer
+                                      - type: string
+                                      description: Specifies the output format of
+                                        the exposed resources, defaults to "1"
+                                      pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                                      x-kubernetes-int-or-string: true
+                                    resource:
+                                      description: 'Required: resource to select'
+                                      type: string
+                                  required:
+                                  - resource
+                                  type: object
+                                  x-kubernetes-map-type: atomic
+                                secretKeyRef:
+                                  description: Selects a key of a secret in the pod's
+                                    namespace
+                                  properties:
+                                    key:
+                                      description: The key of the secret to select
+                                        from.  Must be a valid secret key.
+                                      type: string
+                                    name:
+                                      default: ""
+                                      description: |-
+                                        Name of the referent.
+                                        This field is effectively required, but due to backwards compatibility is
+                                        allowed to be empty. Instances of this type with an empty value here are
+                                        almost certainly wrong.
+                                        More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                                      type: string
+                                    optional:
+                                      description: Specify whether the Secret or its
+                                        key must be defined
+                                      type: boolean
+                                  required:
+                                  - key
+                                  type: object
+                                  x-kubernetes-map-type: atomic
+                              type: object
+                          required:
+                          - name
+                          type: object
+                        type: array
+                      image:
+                        description: |-
+                          Image 完整镜像名称(如果需要覆盖全局配置)
+                          例如：registry.cn-hangzhou.aliyuncs.com/kube-nova/portal-api:v1.0.0
+                        type: string
+                      replicas:
+                        default: 2
+                        description: Replicas 副本数
+                        format: int32
+                        maximum: 100
+                        minimum: 1
+                        type: integer
+                      resources:
+                        description: Resources 资源配置
+                        properties:
+                          claims:
+                            description: |-
+                              Claims lists the names of resources, defined in spec.resourceClaims,
+                              that are used by this container.
+
+                              This field depends on the
+                              DynamicResourceAllocation feature gate.
+
+                              This field is immutable. It can only be set for containers.
+                            items:
+                              description: ResourceClaim references one entry in PodSpec.ResourceClaims.
+                              properties:
+                                name:
+                                  description: |-
+                                    Name must match the name of one entry in pod.spec.resourceClaims of
+                                    the Pod where this field is used. It makes that resource available
+                                    inside a container.
+                                  type: string
+                                request:
+                                  description: |-
+                                    Request is the name chosen for a request in the referenced claim.
+                                    If empty, everything from the claim is made available, otherwise
+                                    only the result of this request.
+                                  type: string
+                              required:
+                              - name
+                              type: object
+                            type: array
+                            x-kubernetes-list-map-keys:
+                            - name
+                            x-kubernetes-list-type: map
+                          limits:
+                            additionalProperties:
+                              anyOf:
+                              - type: integer
+                              - type: string
+                              pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                              x-kubernetes-int-or-string: true
+                            description: |-
+                              Limits describes the maximum amount of compute resources allowed.
+                              More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
+                            type: object
+                          requests:
+                            additionalProperties:
+                              anyOf:
+                              - type: integer
+                              - type: string
+                              pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                              x-kubernetes-int-or-string: true
+                            description: |-
+                              Requests describes the minimum amount of compute resources required.
+                              If Requests is omitted for a container, it defaults to Limits if that is explicitly specified,
+                              otherwise to an implementation-defined value. Requests cannot exceed Limits.
+                              More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
+                            type: object
+                        type: object
+                    type: object
+                  managerRPC:
+                    description: ManagerRPC Manager RPC 服务配置
+                    properties:
+                      enabled:
+                        default: true
+                        description: Enabled 是否启用此服务
+                        type: boolean
+                      env:
+                        description: Env 额外的环境变量
+                        items:
+                          description: EnvVar represents an environment variable present
+                            in a Container.
+                          properties:
+                            name:
+                              description: |-
+                                Name of the environment variable.
+                                May consist of any printable ASCII characters except '='.
+                              type: string
+                            value:
+                              description: |-
+                                Variable references $(VAR_NAME) are expanded
+                                using the previously defined environment variables in the container and
+                                any service environment variables. If a variable cannot be resolved,
+                                the reference in the input string will be unchanged. Double $$ are reduced
+                                to a single $, which allows for escaping the $(VAR_NAME) syntax: i.e.
+                                "$$(VAR_NAME)" will produce the string literal "$(VAR_NAME)".
+                                Escaped references will never be expanded, regardless of whether the variable
+                                exists or not.
+                                Defaults to "".
+                              type: string
+                            valueFrom:
+                              description: Source for the environment variable's value.
+                                Cannot be used if value is not empty.
+                              properties:
+                                configMapKeyRef:
+                                  description: Selects a key of a ConfigMap.
+                                  properties:
+                                    key:
+                                      description: The key to select.
+                                      type: string
+                                    name:
+                                      default: ""
+                                      description: |-
+                                        Name of the referent.
+                                        This field is effectively required, but due to backwards compatibility is
+                                        allowed to be empty. Instances of this type with an empty value here are
+                                        almost certainly wrong.
+                                        More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                                      type: string
+                                    optional:
+                                      description: Specify whether the ConfigMap or
+                                        its key must be defined
+                                      type: boolean
+                                  required:
+                                  - key
+                                  type: object
+                                  x-kubernetes-map-type: atomic
+                                fieldRef:
+                                  description: |-
+                                    Selects a field of the pod: supports metadata.name, metadata.namespace, `metadata.labels['<KEY>']`, `metadata.annotations['<KEY>']`,
+                                    spec.nodeName, spec.serviceAccountName, status.hostIP, status.podIP, status.podIPs.
+                                  properties:
+                                    apiVersion:
+                                      description: Version of the schema the FieldPath
+                                        is written in terms of, defaults to "v1".
+                                      type: string
+                                    fieldPath:
+                                      description: Path of the field to select in
+                                        the specified API version.
+                                      type: string
+                                  required:
+                                  - fieldPath
+                                  type: object
+                                  x-kubernetes-map-type: atomic
+                                fileKeyRef:
+                                  description: |-
+                                    FileKeyRef selects a key of the env file.
+                                    Requires the EnvFiles feature gate to be enabled.
+                                  properties:
+                                    key:
+                                      description: |-
+                                        The key within the env file. An invalid key will prevent the pod from starting.
+                                        The keys defined within a source may consist of any printable ASCII characters except '='.
+                                        During Alpha stage of the EnvFiles feature gate, the key size is limited to 128 characters.
+                                      type: string
+                                    optional:
+                                      default: false
+                                      description: |-
+                                        Specify whether the file or its key must be defined. If the file or key
+                                        does not exist, then the env var is not published.
+                                        If optional is set to true and the specified key does not exist,
+                                        the environment variable will not be set in the Pod's containers.
+
+                                        If optional is set to false and the specified key does not exist,
+                                        an error will be returned during Pod creation.
+                                      type: boolean
+                                    path:
+                                      description: |-
+                                        The path within the volume from which to select the file.
+                                        Must be relative and may not contain the '..' path or start with '..'.
+                                      type: string
+                                    volumeName:
+                                      description: The name of the volume mount containing
+                                        the env file.
+                                      type: string
+                                  required:
+                                  - key
+                                  - path
+                                  - volumeName
+                                  type: object
+                                  x-kubernetes-map-type: atomic
+                                resourceFieldRef:
+                                  description: |-
+                                    Selects a resource of the container: only resources limits and requests
+                                    (limits.cpu, limits.memory, limits.ephemeral-storage, requests.cpu, requests.memory and requests.ephemeral-storage) are currently supported.
+                                  properties:
+                                    containerName:
+                                      description: 'Container name: required for volumes,
+                                        optional for env vars'
+                                      type: string
+                                    divisor:
+                                      anyOf:
+                                      - type: integer
+                                      - type: string
+                                      description: Specifies the output format of
+                                        the exposed resources, defaults to "1"
+                                      pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                                      x-kubernetes-int-or-string: true
+                                    resource:
+                                      description: 'Required: resource to select'
+                                      type: string
+                                  required:
+                                  - resource
+                                  type: object
+                                  x-kubernetes-map-type: atomic
+                                secretKeyRef:
+                                  description: Selects a key of a secret in the pod's
+                                    namespace
+                                  properties:
+                                    key:
+                                      description: The key of the secret to select
+                                        from.  Must be a valid secret key.
+                                      type: string
+                                    name:
+                                      default: ""
+                                      description: |-
+                                        Name of the referent.
+                                        This field is effectively required, but due to backwards compatibility is
+                                        allowed to be empty. Instances of this type with an empty value here are
+                                        almost certainly wrong.
+                                        More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                                      type: string
+                                    optional:
+                                      description: Specify whether the Secret or its
+                                        key must be defined
+                                      type: boolean
+                                  required:
+                                  - key
+                                  type: object
+                                  x-kubernetes-map-type: atomic
+                              type: object
+                          required:
+                          - name
+                          type: object
+                        type: array
+                      image:
+                        description: |-
+                          Image 完整镜像名称(如果需要覆盖全局配置)
+                          例如：registry.cn-hangzhou.aliyuncs.com/kube-nova/portal-api:v1.0.0
+                        type: string
+                      replicas:
+                        default: 2
+                        description: Replicas 副本数
+                        format: int32
+                        maximum: 100
+                        minimum: 1
+                        type: integer
+                      resources:
+                        description: Resources 资源配置
+                        properties:
+                          claims:
+                            description: |-
+                              Claims lists the names of resources, defined in spec.resourceClaims,
+                              that are used by this container.
+
+                              This field depends on the
+                              DynamicResourceAllocation feature gate.
+
+                              This field is immutable. It can only be set for containers.
+                            items:
+                              description: ResourceClaim references one entry in PodSpec.ResourceClaims.
+                              properties:
+                                name:
+                                  description: |-
+                                    Name must match the name of one entry in pod.spec.resourceClaims of
+                                    the Pod where this field is used. It makes that resource available
+                                    inside a container.
+                                  type: string
+                                request:
+                                  description: |-
+                                    Request is the name chosen for a request in the referenced claim.
+                                    If empty, everything from the claim is made available, otherwise
+                                    only the result of this request.
+                                  type: string
+                              required:
+                              - name
+                              type: object
+                            type: array
+                            x-kubernetes-list-map-keys:
+                            - name
+                            x-kubernetes-list-type: map
+                          limits:
+                            additionalProperties:
+                              anyOf:
+                              - type: integer
+                              - type: string
+                              pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                              x-kubernetes-int-or-string: true
+                            description: |-
+                              Limits describes the maximum amount of compute resources allowed.
+                              More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
+                            type: object
+                          requests:
+                            additionalProperties:
+                              anyOf:
+                              - type: integer
+                              - type: string
+                              pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                              x-kubernetes-int-or-string: true
+                            description: |-
+                              Requests describes the minimum amount of compute resources required.
+                              If Requests is omitted for a container, it defaults to Limits if that is explicitly specified,
+                              otherwise to an implementation-defined value. Requests cannot exceed Limits.
+                              More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
+                            type: object
+                        type: object
+                    type: object
+                  portal:
+                    description: Portal Portal 配置
+                    properties:
+                      demoMode:
+                        default: false
+                        description: DemoMode 是否启用演示模式
+                        type: boolean
+                      name:
+                        default: Kube-Nova 云原生平台
+                        description: Name Portal 名称
+                        type: string
+                      url:
+                        description: URL Portal 访问地址
+                        type: string
+                    type: object
+                  portalAPI:
+                    description: PortalAPI Portal API 服务配置
+                    properties:
+                      enabled:
+                        default: true
+                        description: Enabled 是否启用此服务
+                        type: boolean
+                      env:
+                        description: Env 额外的环境变量
+                        items:
+                          description: EnvVar represents an environment variable present
+                            in a Container.
+                          properties:
+                            name:
+                              description: |-
+                                Name of the environment variable.
+                                May consist of any printable ASCII characters except '='.
+                              type: string
+                            value:
+                              description: |-
+                                Variable references $(VAR_NAME) are expanded
+                                using the previously defined environment variables in the container and
+                                any service environment variables. If a variable cannot be resolved,
+                                the reference in the input string will be unchanged. Double $$ are reduced
+                                to a single $, which allows for escaping the $(VAR_NAME) syntax: i.e.
+                                "$$(VAR_NAME)" will produce the string literal "$(VAR_NAME)".
+                                Escaped references will never be expanded, regardless of whether the variable
+                                exists or not.
+                                Defaults to "".
+                              type: string
+                            valueFrom:
+                              description: Source for the environment variable's value.
+                                Cannot be used if value is not empty.
+                              properties:
+                                configMapKeyRef:
+                                  description: Selects a key of a ConfigMap.
+                                  properties:
+                                    key:
+                                      description: The key to select.
+                                      type: string
+                                    name:
+                                      default: ""
+                                      description: |-
+                                        Name of the referent.
+                                        This field is effectively required, but due to backwards compatibility is
+                                        allowed to be empty. Instances of this type with an empty value here are
+                                        almost certainly wrong.
+                                        More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                                      type: string
+                                    optional:
+                                      description: Specify whether the ConfigMap or
+                                        its key must be defined
+                                      type: boolean
+                                  required:
+                                  - key
+                                  type: object
+                                  x-kubernetes-map-type: atomic
+                                fieldRef:
+                                  description: |-
+                                    Selects a field of the pod: supports metadata.name, metadata.namespace, `metadata.labels['<KEY>']`, `metadata.annotations['<KEY>']`,
+                                    spec.nodeName, spec.serviceAccountName, status.hostIP, status.podIP, status.podIPs.
+                                  properties:
+                                    apiVersion:
+                                      description: Version of the schema the FieldPath
+                                        is written in terms of, defaults to "v1".
+                                      type: string
+                                    fieldPath:
+                                      description: Path of the field to select in
+                                        the specified API version.
+                                      type: string
+                                  required:
+                                  - fieldPath
+                                  type: object
+                                  x-kubernetes-map-type: atomic
+                                fileKeyRef:
+                                  description: |-
+                                    FileKeyRef selects a key of the env file.
+                                    Requires the EnvFiles feature gate to be enabled.
+                                  properties:
+                                    key:
+                                      description: |-
+                                        The key within the env file. An invalid key will prevent the pod from starting.
+                                        The keys defined within a source may consist of any printable ASCII characters except '='.
+                                        During Alpha stage of the EnvFiles feature gate, the key size is limited to 128 characters.
+                                      type: string
+                                    optional:
+                                      default: false
+                                      description: |-
+                                        Specify whether the file or its key must be defined. If the file or key
+                                        does not exist, then the env var is not published.
+                                        If optional is set to true and the specified key does not exist,
+                                        the environment variable will not be set in the Pod's containers.
+
+                                        If optional is set to false and the specified key does not exist,
+                                        an error will be returned during Pod creation.
+                                      type: boolean
+                                    path:
+                                      description: |-
+                                        The path within the volume from which to select the file.
+                                        Must be relative and may not contain the '..' path or start with '..'.
+                                      type: string
+                                    volumeName:
+                                      description: The name of the volume mount containing
+                                        the env file.
+                                      type: string
+                                  required:
+                                  - key
+                                  - path
+                                  - volumeName
+                                  type: object
+                                  x-kubernetes-map-type: atomic
+                                resourceFieldRef:
+                                  description: |-
+                                    Selects a resource of the container: only resources limits and requests
+                                    (limits.cpu, limits.memory, limits.ephemeral-storage, requests.cpu, requests.memory and requests.ephemeral-storage) are currently supported.
+                                  properties:
+                                    containerName:
+                                      description: 'Container name: required for volumes,
+                                        optional for env vars'
+                                      type: string
+                                    divisor:
+                                      anyOf:
+                                      - type: integer
+                                      - type: string
+                                      description: Specifies the output format of
+                                        the exposed resources, defaults to "1"
+                                      pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                                      x-kubernetes-int-or-string: true
+                                    resource:
+                                      description: 'Required: resource to select'
+                                      type: string
+                                  required:
+                                  - resource
+                                  type: object
+                                  x-kubernetes-map-type: atomic
+                                secretKeyRef:
+                                  description: Selects a key of a secret in the pod's
+                                    namespace
+                                  properties:
+                                    key:
+                                      description: The key of the secret to select
+                                        from.  Must be a valid secret key.
+                                      type: string
+                                    name:
+                                      default: ""
+                                      description: |-
+                                        Name of the referent.
+                                        This field is effectively required, but due to backwards compatibility is
+                                        allowed to be empty. Instances of this type with an empty value here are
+                                        almost certainly wrong.
+                                        More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                                      type: string
+                                    optional:
+                                      description: Specify whether the Secret or its
+                                        key must be defined
+                                      type: boolean
+                                  required:
+                                  - key
+                                  type: object
+                                  x-kubernetes-map-type: atomic
+                              type: object
+                          required:
+                          - name
+                          type: object
+                        type: array
+                      image:
+                        description: |-
+                          Image 完整镜像名称(如果需要覆盖全局配置)
+                          例如：registry.cn-hangzhou.aliyuncs.com/kube-nova/portal-api:v1.0.0
+                        type: string
+                      replicas:
+                        default: 2
+                        description: Replicas 副本数
+                        format: int32
+                        maximum: 100
+                        minimum: 1
+                        type: integer
+                      resources:
+                        description: Resources 资源配置
+                        properties:
+                          claims:
+                            description: |-
+                              Claims lists the names of resources, defined in spec.resourceClaims,
+                              that are used by this container.
+
+                              This field depends on the
+                              DynamicResourceAllocation feature gate.
+
+                              This field is immutable. It can only be set for containers.
+                            items:
+                              description: ResourceClaim references one entry in PodSpec.ResourceClaims.
+                              properties:
+                                name:
+                                  description: |-
+                                    Name must match the name of one entry in pod.spec.resourceClaims of
+                                    the Pod where this field is used. It makes that resource available
+                                    inside a container.
+                                  type: string
+                                request:
+                                  description: |-
+                                    Request is the name chosen for a request in the referenced claim.
+                                    If empty, everything from the claim is made available, otherwise
+                                    only the result of this request.
+                                  type: string
+                              required:
+                              - name
+                              type: object
+                            type: array
+                            x-kubernetes-list-map-keys:
+                            - name
+                            x-kubernetes-list-type: map
+                          limits:
+                            additionalProperties:
+                              anyOf:
+                              - type: integer
+                              - type: string
+                              pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                              x-kubernetes-int-or-string: true
+                            description: |-
+                              Limits describes the maximum amount of compute resources allowed.
+                              More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
+                            type: object
+                          requests:
+                            additionalProperties:
+                              anyOf:
+                              - type: integer
+                              - type: string
+                              pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                              x-kubernetes-int-or-string: true
+                            description: |-
+                              Requests describes the minimum amount of compute resources required.
+                              If Requests is omitted for a container, it defaults to Limits if that is explicitly specified,
+                              otherwise to an implementation-defined value. Requests cannot exceed Limits.
+                              More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
+                            type: object
+                        type: object
+                    type: object
+                  portalRPC:
+                    description: PortalRPC Portal RPC 服务配置
+                    properties:
+                      enabled:
+                        default: true
+                        description: Enabled 是否启用此服务
+                        type: boolean
+                      env:
+                        description: Env 额外的环境变量
+                        items:
+                          description: EnvVar represents an environment variable present
+                            in a Container.
+                          properties:
+                            name:
+                              description: |-
+                                Name of the environment variable.
+                                May consist of any printable ASCII characters except '='.
+                              type: string
+                            value:
+                              description: |-
+                                Variable references $(VAR_NAME) are expanded
+                                using the previously defined environment variables in the container and
+                                any service environment variables. If a variable cannot be resolved,
+                                the reference in the input string will be unchanged. Double $$ are reduced
+                                to a single $, which allows for escaping the $(VAR_NAME) syntax: i.e.
+                                "$$(VAR_NAME)" will produce the string literal "$(VAR_NAME)".
+                                Escaped references will never be expanded, regardless of whether the variable
+                                exists or not.
+                                Defaults to "".
+                              type: string
+                            valueFrom:
+                              description: Source for the environment variable's value.
+                                Cannot be used if value is not empty.
+                              properties:
+                                configMapKeyRef:
+                                  description: Selects a key of a ConfigMap.
+                                  properties:
+                                    key:
+                                      description: The key to select.
+                                      type: string
+                                    name:
+                                      default: ""
+                                      description: |-
+                                        Name of the referent.
+                                        This field is effectively required, but due to backwards compatibility is
+                                        allowed to be empty. Instances of this type with an empty value here are
+                                        almost certainly wrong.
+                                        More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                                      type: string
+                                    optional:
+                                      description: Specify whether the ConfigMap or
+                                        its key must be defined
+                                      type: boolean
+                                  required:
+                                  - key
+                                  type: object
+                                  x-kubernetes-map-type: atomic
+                                fieldRef:
+                                  description: |-
+                                    Selects a field of the pod: supports metadata.name, metadata.namespace, `metadata.labels['<KEY>']`, `metadata.annotations['<KEY>']`,
+                                    spec.nodeName, spec.serviceAccountName, status.hostIP, status.podIP, status.podIPs.
+                                  properties:
+                                    apiVersion:
+                                      description: Version of the schema the FieldPath
+                                        is written in terms of, defaults to "v1".
+                                      type: string
+                                    fieldPath:
+                                      description: Path of the field to select in
+                                        the specified API version.
+                                      type: string
+                                  required:
+                                  - fieldPath
+                                  type: object
+                                  x-kubernetes-map-type: atomic
+                                fileKeyRef:
+                                  description: |-
+                                    FileKeyRef selects a key of the env file.
+                                    Requires the EnvFiles feature gate to be enabled.
+                                  properties:
+                                    key:
+                                      description: |-
+                                        The key within the env file. An invalid key will prevent the pod from starting.
+                                        The keys defined within a source may consist of any printable ASCII characters except '='.
+                                        During Alpha stage of the EnvFiles feature gate, the key size is limited to 128 characters.
+                                      type: string
+                                    optional:
+                                      default: false
+                                      description: |-
+                                        Specify whether the file or its key must be defined. If the file or key
+                                        does not exist, then the env var is not published.
+                                        If optional is set to true and the specified key does not exist,
+                                        the environment variable will not be set in the Pod's containers.
+
+                                        If optional is set to false and the specified key does not exist,
+                                        an error will be returned during Pod creation.
+                                      type: boolean
+                                    path:
+                                      description: |-
+                                        The path within the volume from which to select the file.
+                                        Must be relative and may not contain the '..' path or start with '..'.
+                                      type: string
+                                    volumeName:
+                                      description: The name of the volume mount containing
+                                        the env file.
+                                      type: string
+                                  required:
+                                  - key
+                                  - path
+                                  - volumeName
+                                  type: object
+                                  x-kubernetes-map-type: atomic
+                                resourceFieldRef:
+                                  description: |-
+                                    Selects a resource of the container: only resources limits and requests
+                                    (limits.cpu, limits.memory, limits.ephemeral-storage, requests.cpu, requests.memory and requests.ephemeral-storage) are currently supported.
+                                  properties:
+                                    containerName:
+                                      description: 'Container name: required for volumes,
+                                        optional for env vars'
+                                      type: string
+                                    divisor:
+                                      anyOf:
+                                      - type: integer
+                                      - type: string
+                                      description: Specifies the output format of
+                                        the exposed resources, defaults to "1"
+                                      pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                                      x-kubernetes-int-or-string: true
+                                    resource:
+                                      description: 'Required: resource to select'
+                                      type: string
+                                  required:
+                                  - resource
+                                  type: object
+                                  x-kubernetes-map-type: atomic
+                                secretKeyRef:
+                                  description: Selects a key of a secret in the pod's
+                                    namespace
+                                  properties:
+                                    key:
+                                      description: The key of the secret to select
+                                        from.  Must be a valid secret key.
+                                      type: string
+                                    name:
+                                      default: ""
+                                      description: |-
+                                        Name of the referent.
+                                        This field is effectively required, but due to backwards compatibility is
+                                        allowed to be empty. Instances of this type with an empty value here are
+                                        almost certainly wrong.
+                                        More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                                      type: string
+                                    optional:
+                                      description: Specify whether the Secret or its
+                                        key must be defined
+                                      type: boolean
+                                  required:
+                                  - key
+                                  type: object
+                                  x-kubernetes-map-type: atomic
+                              type: object
+                          required:
+                          - name
+                          type: object
+                        type: array
+                      image:
+                        description: |-
+                          Image 完整镜像名称(如果需要覆盖全局配置)
+                          例如：registry.cn-hangzhou.aliyuncs.com/kube-nova/portal-api:v1.0.0
+                        type: string
+                      replicas:
+                        default: 2
+                        description: Replicas 副本数
+                        format: int32
+                        maximum: 100
+                        minimum: 1
+                        type: integer
+                      resources:
+                        description: Resources 资源配置
+                        properties:
+                          claims:
+                            description: |-
+                              Claims lists the names of resources, defined in spec.resourceClaims,
+                              that are used by this container.
+
+                              This field depends on the
+                              DynamicResourceAllocation feature gate.
+
+                              This field is immutable. It can only be set for containers.
+                            items:
+                              description: ResourceClaim references one entry in PodSpec.ResourceClaims.
+                              properties:
+                                name:
+                                  description: |-
+                                    Name must match the name of one entry in pod.spec.resourceClaims of
+                                    the Pod where this field is used. It makes that resource available
+                                    inside a container.
+                                  type: string
+                                request:
+                                  description: |-
+                                    Request is the name chosen for a request in the referenced claim.
+                                    If empty, everything from the claim is made available, otherwise
+                                    only the result of this request.
+                                  type: string
+                              required:
+                              - name
+                              type: object
+                            type: array
+                            x-kubernetes-list-map-keys:
+                            - name
+                            x-kubernetes-list-type: map
+                          limits:
+                            additionalProperties:
+                              anyOf:
+                              - type: integer
+                              - type: string
+                              pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                              x-kubernetes-int-or-string: true
+                            description: |-
+                              Limits describes the maximum amount of compute resources allowed.
+                              More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
+                            type: object
+                          requests:
+                            additionalProperties:
+                              anyOf:
+                              - type: integer
+                              - type: string
+                              pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                              x-kubernetes-int-or-string: true
+                            description: |-
+                              Requests describes the minimum amount of compute resources required.
+                              If Requests is omitted for a container, it defaults to Limits if that is explicitly specified,
+                              otherwise to an implementation-defined value. Requests cannot exceed Limits.
+                              More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
+                            type: object
+                        type: object
+                    type: object
+                  webhookToken:
+                    description: WebhookToken Alertmanager Webhook Token(可选)
+                    type: string
+                  workloadAPI:
+                    description: WorkloadAPI Workload API 服务配置
+                    properties:
+                      enabled:
+                        default: true
+                        description: Enabled 是否启用此服务
+                        type: boolean
+                      env:
+                        description: Env 额外的环境变量
+                        items:
+                          description: EnvVar represents an environment variable present
+                            in a Container.
+                          properties:
+                            name:
+                              description: |-
+                                Name of the environment variable.
+                                May consist of any printable ASCII characters except '='.
+                              type: string
+                            value:
+                              description: |-
+                                Variable references $(VAR_NAME) are expanded
+                                using the previously defined environment variables in the container and
+                                any service environment variables. If a variable cannot be resolved,
+                                the reference in the input string will be unchanged. Double $$ are reduced
+                                to a single $, which allows for escaping the $(VAR_NAME) syntax: i.e.
+                                "$$(VAR_NAME)" will produce the string literal "$(VAR_NAME)".
+                                Escaped references will never be expanded, regardless of whether the variable
+                                exists or not.
+                                Defaults to "".
+                              type: string
+                            valueFrom:
+                              description: Source for the environment variable's value.
+                                Cannot be used if value is not empty.
+                              properties:
+                                configMapKeyRef:
+                                  description: Selects a key of a ConfigMap.
+                                  properties:
+                                    key:
+                                      description: The key to select.
+                                      type: string
+                                    name:
+                                      default: ""
+                                      description: |-
+                                        Name of the referent.
+                                        This field is effectively required, but due to backwards compatibility is
+                                        allowed to be empty. Instances of this type with an empty value here are
+                                        almost certainly wrong.
+                                        More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                                      type: string
+                                    optional:
+                                      description: Specify whether the ConfigMap or
+                                        its key must be defined
+                                      type: boolean
+                                  required:
+                                  - key
+                                  type: object
+                                  x-kubernetes-map-type: atomic
+                                fieldRef:
+                                  description: |-
+                                    Selects a field of the pod: supports metadata.name, metadata.namespace, `metadata.labels['<KEY>']`, `metadata.annotations['<KEY>']`,
+                                    spec.nodeName, spec.serviceAccountName, status.hostIP, status.podIP, status.podIPs.
+                                  properties:
+                                    apiVersion:
+                                      description: Version of the schema the FieldPath
+                                        is written in terms of, defaults to "v1".
+                                      type: string
+                                    fieldPath:
+                                      description: Path of the field to select in
+                                        the specified API version.
+                                      type: string
+                                  required:
+                                  - fieldPath
+                                  type: object
+                                  x-kubernetes-map-type: atomic
+                                fileKeyRef:
+                                  description: |-
+                                    FileKeyRef selects a key of the env file.
+                                    Requires the EnvFiles feature gate to be enabled.
+                                  properties:
+                                    key:
+                                      description: |-
+                                        The key within the env file. An invalid key will prevent the pod from starting.
+                                        The keys defined within a source may consist of any printable ASCII characters except '='.
+                                        During Alpha stage of the EnvFiles feature gate, the key size is limited to 128 characters.
+                                      type: string
+                                    optional:
+                                      default: false
+                                      description: |-
+                                        Specify whether the file or its key must be defined. If the file or key
+                                        does not exist, then the env var is not published.
+                                        If optional is set to true and the specified key does not exist,
+                                        the environment variable will not be set in the Pod's containers.
+
+                                        If optional is set to false and the specified key does not exist,
+                                        an error will be returned during Pod creation.
+                                      type: boolean
+                                    path:
+                                      description: |-
+                                        The path within the volume from which to select the file.
+                                        Must be relative and may not contain the '..' path or start with '..'.
+                                      type: string
+                                    volumeName:
+                                      description: The name of the volume mount containing
+                                        the env file.
+                                      type: string
+                                  required:
+                                  - key
+                                  - path
+                                  - volumeName
+                                  type: object
+                                  x-kubernetes-map-type: atomic
+                                resourceFieldRef:
+                                  description: |-
+                                    Selects a resource of the container: only resources limits and requests
+                                    (limits.cpu, limits.memory, limits.ephemeral-storage, requests.cpu, requests.memory and requests.ephemeral-storage) are currently supported.
+                                  properties:
+                                    containerName:
+                                      description: 'Container name: required for volumes,
+                                        optional for env vars'
+                                      type: string
+                                    divisor:
+                                      anyOf:
+                                      - type: integer
+                                      - type: string
+                                      description: Specifies the output format of
+                                        the exposed resources, defaults to "1"
+                                      pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                                      x-kubernetes-int-or-string: true
+                                    resource:
+                                      description: 'Required: resource to select'
+                                      type: string
+                                  required:
+                                  - resource
+                                  type: object
+                                  x-kubernetes-map-type: atomic
+                                secretKeyRef:
+                                  description: Selects a key of a secret in the pod's
+                                    namespace
+                                  properties:
+                                    key:
+                                      description: The key of the secret to select
+                                        from.  Must be a valid secret key.
+                                      type: string
+                                    name:
+                                      default: ""
+                                      description: |-
+                                        Name of the referent.
+                                        This field is effectively required, but due to backwards compatibility is
+                                        allowed to be empty. Instances of this type with an empty value here are
+                                        almost certainly wrong.
+                                        More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                                      type: string
+                                    optional:
+                                      description: Specify whether the Secret or its
+                                        key must be defined
+                                      type: boolean
+                                  required:
+                                  - key
+                                  type: object
+                                  x-kubernetes-map-type: atomic
+                              type: object
+                          required:
+                          - name
+                          type: object
+                        type: array
+                      image:
+                        description: |-
+                          Image 完整镜像名称(如果需要覆盖全局配置)
+                          例如：registry.cn-hangzhou.aliyuncs.com/kube-nova/portal-api:v1.0.0
+                        type: string
+                      replicas:
+                        default: 2
+                        description: Replicas 副本数
+                        format: int32
+                        maximum: 100
+                        minimum: 1
+                        type: integer
+                      resources:
+                        description: Resources 资源配置
+                        properties:
+                          claims:
+                            description: |-
+                              Claims lists the names of resources, defined in spec.resourceClaims,
+                              that are used by this container.
+
+                              This field depends on the
+                              DynamicResourceAllocation feature gate.
+
+                              This field is immutable. It can only be set for containers.
+                            items:
+                              description: ResourceClaim references one entry in PodSpec.ResourceClaims.
+                              properties:
+                                name:
+                                  description: |-
+                                    Name must match the name of one entry in pod.spec.resourceClaims of
+                                    the Pod where this field is used. It makes that resource available
+                                    inside a container.
+                                  type: string
+                                request:
+                                  description: |-
+                                    Request is the name chosen for a request in the referenced claim.
+                                    If empty, everything from the claim is made available, otherwise
+                                    only the result of this request.
+                                  type: string
+                              required:
+                              - name
+                              type: object
+                            type: array
+                            x-kubernetes-list-map-keys:
+                            - name
+                            x-kubernetes-list-type: map
+                          limits:
+                            additionalProperties:
+                              anyOf:
+                              - type: integer
+                              - type: string
+                              pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                              x-kubernetes-int-or-string: true
+                            description: |-
+                              Limits describes the maximum amount of compute resources allowed.
+                              More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
+                            type: object
+                          requests:
+                            additionalProperties:
+                              anyOf:
+                              - type: integer
+                              - type: string
+                              pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                              x-kubernetes-int-or-string: true
+                            description: |-
+                              Requests describes the minimum amount of compute resources required.
+                              If Requests is omitted for a container, it defaults to Limits if that is explicitly specified,
+                              otherwise to an implementation-defined value. Requests cannot exceed Limits.
+                              More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
+                            type: object
+                        type: object
+                    type: object
+                required:
+                - jwt
+                type: object
+              storage:
+                description: Storage 对象存储配置(MinIO/S3)
+                properties:
+                  accessKey:
+                    description: AccessKey 访问密钥 ID
+                    type: string
+                  bucket:
+                    description: Bucket 存储桶名称
+                    type: string
+                  endpoint:
+                    description: |-
+                      Endpoint 存储端点地址(不含 http:// 或 https://)
+                      例如：minio.default.svc.cluster.local:9000
+                    type: string
+                  endpointProxy:
+                    description: |-
+                      EndpointProxy 代理端点 提供给用户的访问入口
+                      例如：https://minio.default.svc.cluster.local:9000
+                    type: string
+                  secretKey:
+                    description: SecretKey 访问密钥(明文，Operator 会自动存储到 Secret)
+                    minLength: 1
+                    type: string
+                  tls:
+                    description: TLS TLS 配置(如果 MinIO 启用了 HTTPS)
+                    properties:
+                      enabled:
+                        default: false
+                        description: Enabled 是否启用 TLS
+                        type: boolean
+                      secretName:
+                        description: |-
+                          SecretName 包含 TLS 证书的 Secret 名称
+                          Secret 必须包含以下键：
+                          - public.crt: 公钥证书
+                          - private.key: 私钥
+                          用户需要提前创建此 Secret
+                          当 Enabled=true 时此字段必填
+                        type: string
+                    type: object
+                required:
+                - accessKey
+                - bucket
+                - endpoint
+                - secretKey
+                type: object
+              telemetry:
+                description: |-
+                  Telemetry 链路追踪配置(Jaeger)
+                  可选，如果不配置则不启用链路追踪
+                properties:
+                  batcher:
+                    default: jaeger
+                    description: Batcher 批处理器类型
+                    type: string
+                  enabled:
+                    default: false
+                    description: |-
+                      Enabled 是否启用链路追踪
+                      如果为 false，后续配置将被忽略
+                    type: boolean
+                  jaegerEndpoint:
+                    description: |-
+                      JaegerEndpoint Jaeger Collector 端点地址
+                      例如：http://jaeger-collector.default.svc.cluster.local:14268/api/traces
+                      当 Enabled=true 时此字段必填
+                    type: string
+                  sampler:
+                    default: "1.0"
+                    description: |-
+                      Sampler 采样率(0.0-1.0)
+                      1.0 表示采样所有请求，0.1 表示采样 10% 的请求
+                    type: string
+                type: object
+              web:
+                description: Web 前端配置
+                properties:
+                  customNginxConfigMap:
+                    description: |-
+                      CustomNginxConfigMap 自定义 Nginx 配置的 ConfigMap 名称
+                      如果指定，将使用此 ConfigMap 替代默认的 Nginx 配置
+                      ConfigMap 必须包含 nginx.conf 和 default.conf 两个 key
+                    type: string
+                  exposeType:
+                    description: ExposeType 暴露方式：ingress 或 nodeport
+                    enum:
+                    - ingress
+                    - nodeport
+                    type: string
+                  image:
+                    description: Image 完整镜像名称(如果需要覆盖全局配置)
+                    type: string
+                  ingress:
+                    description: Ingress Ingress 配置(当 ExposeType=ingress 时必填)
+                    properties:
+                      annotations:
+                        additionalProperties:
+                          type: string
+                        description: Annotations 额外的注解
+                        type: object
+                      className:
+                        default: nginx
+                        description: ClassName Ingress 类名
+                        type: string
+                      host:
+                        description: Host 域名
+                        type: string
+                      tls:
+                        description: TLS TLS 配置
+                        properties:
+                          enabled:
+                            default: false
+                            description: Enabled 是否启用 TLS
+                            type: boolean
+                          secretName:
+                            description: |-
+                              SecretName TLS 证书 Secret 名称
+                              Secret 必须包含 tls.crt 和 tls.key
+                              用户需要提前创建此 Secret
+                              当 Enabled=true 时此字段必填
+                            type: string
+                        type: object
+                    required:
+                    - host
+                    type: object
+                  minioProxy:
+                    description: MinIOProxy MinIO 代理配置
+                    properties:
+                      enabled:
+                        default: false
+                        description: |-
+                          Enabled 是否在 Nginx 中启用 MinIO 代理
+                          启用后可以通过 Web 前端访问 MinIO 的对象
+                        type: boolean
+                      pathPrefix:
+                        default: /storage
+                        description: |-
+                          PathPrefix 代理路径前缀
+                          例如：/storage，则通过 http://web-host/storage/bucket/object 访问
+                        type: string
+                      proxyEndpoint:
+                        description: |-
+                          ProxyEndpoint 代理地址(可选，通常自动推断)
+                          如果手动配置，后端服务将通过此地址访问 MinIO
+                          例如：http://www.example.com/storage
+                          如果不配置，将根据 exposeType 自动推断：
+                          - Ingress 模式：http(s)://域名/storage
+                          - NodePort 模式：http://<NODE_IP>:<NODE_PORT>/storage
+                        type: string
+                    type: object
+                  nodePort:
+                    description: NodePort NodePort 配置(当 ExposeType=nodeport 时可选，不配置则使用自动分配的端口)
+                    properties:
+                      httpPort:
+                        description: HTTPPort HTTP NodePort 端口(可选，不指定则自动分配)
+                        format: int32
+                        maximum: 32767
+                        minimum: 30000
+                        type: integer
+                      https:
+                        description: HTTPS HTTPS 配置
+                        properties:
+                          enabled:
+                            default: false
+                            description: Enabled 是否启用 HTTPS
+                            type: boolean
+                          port:
+                            description: Port HTTPS NodePort 端口(可选，不指定则自动分配)
+                            format: int32
+                            maximum: 32767
+                            minimum: 30000
+                            type: integer
+                          secretName:
+                            description: |-
+                              SecretName TLS 证书 Secret 名称
+                              Secret 必须包含 tls.crt 和 tls.key
+                              用户需要提前创建此 Secret
+                              当 Enabled=true 时此字段必填
+                            type: string
+                        type: object
+                    type: object
+                  replicas:
+                    default: 3
+                    description: Replicas 副本数
+                    format: int32
+                    maximum: 100
+                    minimum: 1
+                    type: integer
+                  resources:
+                    description: Resources 资源配置
+                    properties:
+                      claims:
+                        description: |-
+                          Claims lists the names of resources, defined in spec.resourceClaims,
+                          that are used by this container.
+
+                          This field depends on the
+                          DynamicResourceAllocation feature gate.
+
+                          This field is immutable. It can only be set for containers.
+                        items:
+                          description: ResourceClaim references one entry in PodSpec.ResourceClaims.
+                          properties:
+                            name:
+                              description: |-
+                                Name must match the name of one entry in pod.spec.resourceClaims of
+                                the Pod where this field is used. It makes that resource available
+                                inside a container.
+                              type: string
+                            request:
+                              description: |-
+                                Request is the name chosen for a request in the referenced claim.
+                                If empty, everything from the claim is made available, otherwise
+                                only the result of this request.
+                              type: string
+                          required:
+                          - name
+                          type: object
+                        type: array
+                        x-kubernetes-list-map-keys:
+                        - name
+                        x-kubernetes-list-type: map
+                      limits:
+                        additionalProperties:
+                          anyOf:
+                          - type: integer
+                          - type: string
+                          pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                          x-kubernetes-int-or-string: true
+                        description: |-
+                          Limits describes the maximum amount of compute resources allowed.
+                          More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
+                        type: object
+                      requests:
+                        additionalProperties:
+                          anyOf:
+                          - type: integer
+                          - type: string
+                          pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                          x-kubernetes-int-or-string: true
+                        description: |-
+                          Requests describes the minimum amount of compute resources required.
+                          If Requests is omitted for a container, it defaults to Limits if that is explicitly specified,
+                          otherwise to an implementation-defined value. Requests cannot exceed Limits.
+                          More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
+                        type: object
+                    type: object
+                required:
+                - exposeType
+                type: object
+            required:
+            - cache
+            - database
+            - services
+            - storage
+            - web
+            type: object
+          status:
+            description: KubeNovaStatus 定义了 KubeNova 的观测状态
+            properties:
+              accessInfo:
+                description: AccessInfo 访问信息
+                properties:
+                  cacheEndpoint:
+                    description: CacheEndpoint 缓存端点
+                    type: string
+                  databaseEndpoint:
+                    description: DatabaseEndpoint 数据库端点
+                    type: string
+                  jaegerUIURL:
+                    description: JaegerUIURL Jaeger UI 访问地址
+                    type: string
+                  serviceEndpoints:
+                    additionalProperties:
+                      type: string
+                    description: ServiceEndpoints 服务端点映射
+                    type: object
+                  storageConsoleURL:
+                    description: StorageConsoleURL MinIO 控制台地址
+                    type: string
+                  storageEndpoint:
+                    description: StorageEndpoint 存储端点
+                    type: string
+                  webURL:
+                    description: WebURL Web 访问地址
+                    type: string
+                type: object
+              componentStatus:
+                description: ComponentStatus 组件状态
+                properties:
+                  cache:
+                    description: Cache 缓存状态
+                    properties:
+                      desiredReplicas:
+                        description: DesiredReplicas 期望副本数
+                        format: int32
+                        type: integer
+                      lastTransitionTime:
+                        description: LastTransitionTime 最后状态转换时间
+                        format: date-time
+                        type: string
+                      message:
+                        description: Message 状态消息
+                        type: string
+                      readyReplicas:
+                        description: ReadyReplicas 就绪副本数
+                        format: int32
+                        type: integer
+                      state:
+                        description: State 状态
+                        type: string
+                    type: object
+                  database:
+                    description: Database 数据库状态
+                    properties:
+                      desiredReplicas:
+                        description: DesiredReplicas 期望副本数
+                        format: int32
+                        type: integer
+                      lastTransitionTime:
+                        description: LastTransitionTime 最后状态转换时间
+                        format: date-time
+                        type: string
+                      message:
+                        description: Message 状态消息
+                        type: string
+                      readyReplicas:
+                        description: ReadyReplicas 就绪副本数
+                        format: int32
+                        type: integer
+                      state:
+                        description: State 状态
+                        type: string
+                    type: object
+                  services:
+                    additionalProperties:
+                      description: ComponentStatus 组件状态
+                      properties:
+                        desiredReplicas:
+                          description: DesiredReplicas 期望副本数
+                          format: int32
+                          type: integer
+                        lastTransitionTime:
+                          description: LastTransitionTime 最后状态转换时间
+                          format: date-time
+                          type: string
+                        message:
+                          description: Message 状态消息
+                          type: string
+                        readyReplicas:
+                          description: ReadyReplicas 就绪副本数
+                          format: int32
+                          type: integer
+                        state:
+                          description: State 状态
+                          type: string
+                      type: object
+                    description: Services 后端服务状态
+                    type: object
+                  storage:
+                    description: Storage 存储状态
+                    properties:
+                      desiredReplicas:
+                        description: DesiredReplicas 期望副本数
+                        format: int32
+                        type: integer
+                      lastTransitionTime:
+                        description: LastTransitionTime 最后状态转换时间
+                        format: date-time
+                        type: string
+                      message:
+                        description: Message 状态消息
+                        type: string
+                      readyReplicas:
+                        description: ReadyReplicas 就绪副本数
+                        format: int32
+                        type: integer
+                      state:
+                        description: State 状态
+                        type: string
+                    type: object
+                  telemetry:
+                    description: Telemetry 链路追踪状态
+                    properties:
+                      desiredReplicas:
+                        description: DesiredReplicas 期望副本数
+                        format: int32
+                        type: integer
+                      lastTransitionTime:
+                        description: LastTransitionTime 最后状态转换时间
+                        format: date-time
+                        type: string
+                      message:
+                        description: Message 状态消息
+                        type: string
+                      readyReplicas:
+                        description: ReadyReplicas 就绪副本数
+                        format: int32
+                        type: integer
+                      state:
+                        description: State 状态
+                        type: string
+                    type: object
+                  web:
+                    description: Web Web 前端状态
+                    properties:
+                      desiredReplicas:
+                        description: DesiredReplicas 期望副本数
+                        format: int32
+                        type: integer
+                      lastTransitionTime:
+                        description: LastTransitionTime 最后状态转换时间
+                        format: date-time
+                        type: string
+                      message:
+                        description: Message 状态消息
+                        type: string
+                      readyReplicas:
+                        description: ReadyReplicas 就绪副本数
+                        format: int32
+                        type: integer
+                      state:
+                        description: State 状态
+                        type: string
+                    type: object
+                type: object
+              conditions:
+                description: Conditions 条件列表
+                items:
+                  description: Condition contains details for one aspect of the current
+                    state of this API Resource.
+                  properties:
+                    lastTransitionTime:
+                      description: |-
+                        lastTransitionTime is the last time the condition transitioned from one status to another.
+                        This should be when the underlying condition changed.  If that is not known, then using the time when the API field changed is acceptable.
+                      format: date-time
+                      type: string
+                    message:
+                      description: |-
+                        message is a human readable message indicating details about the transition.
+                        This may be an empty string.
+                      maxLength: 32768
+                      type: string
+                    observedGeneration:
+                      description: |-
+                        observedGeneration represents the .metadata.generation that the condition was set based upon.
+                        For instance, if .metadata.generation is currently 12, but the .status.conditions[x].observedGeneration is 9, the condition is out of date
+                        with respect to the current state of the instance.
+                      format: int64
+                      minimum: 0
+                      type: integer
+                    reason:
+                      description: |-
+                        reason contains a programmatic identifier indicating the reason for the condition's last transition.
+                        Producers of specific condition types may define expected values and meanings for this field,
+                        and whether the values are considered a guaranteed API.
+                        The value should be a CamelCase string.
+                        This field may not be empty.
+                      maxLength: 1024
+                      minLength: 1
+                      pattern: ^[A-Za-z]([A-Za-z0-9_,:]*[A-Za-z0-9_])?$
+                      type: string
+                    status:
+                      description: status of the condition, one of True, False, Unknown.
+                      enum:
+                      - "True"
+                      - "False"
+                      - Unknown
+                      type: string
+                    type:
+                      description: type of condition in CamelCase or in foo.example.com/CamelCase.
+                      maxLength: 316
+                      pattern: ^([a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*/)?(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])$
+                      type: string
+                  required:
+                  - lastTransitionTime
+                  - message
+                  - reason
+                  - status
+                  - type
+                  type: object
+                type: array
+              lastUpdateTime:
+                description: LastUpdateTime 最后更新时间
+                format: date-time
+                type: string
+              message:
+                description: Message 状态消息
+                type: string
+              observedGeneration:
+                description: ObservedGeneration 观测到的 generation
+                format: int64
+                type: integer
+              phase:
+                description: Phase 当前部署阶段
+                type: string
+            type: object
+        type: object
+    served: true
+    storage: true
+    subresources:
+      status: {}
