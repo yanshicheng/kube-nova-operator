@@ -19,6 +19,7 @@
   <a target="_blank" href="https://www.cnblogs.com/yanshicheng/articles/19363328"><b>📖 部署文档</b></a> |
   <a target="_blank" href="https://wiki-images.yanshicheng.com/common/kube-nova-wechat.png"><b>💬 加入我们</b></a>
 </p>
+
 ------
 
 ## 📦 代码仓库
