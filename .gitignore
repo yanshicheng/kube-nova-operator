@@ -20,7 +20,6 @@ go.work
 # editor and IDE paraphernalia
 .idea
 .vscode
-.husky
 *.swp
 *.swo
 *~
