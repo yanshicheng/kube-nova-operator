@@ -213,6 +213,9 @@ func buildHTTPServerBlock(kn *kubenovav1.KubeNova) string {
 server {
     listen 80;
     server_name _;
+    set_real_ip_from 0.0.0.0/0;
+    real_ip_header X-Forwarded-For;
+    real_ip_recursive on;
 `
 
 	// 如果是 NodePort + HTTPS 模式，HTTP 强制跳转到 HTTPS
@@ -271,7 +274,9 @@ func buildHTTPSServerBlock(kn *kubenovav1.KubeNova) string {
 server {
     listen 443 ssl http2;
     server_name _;
-
+    set_real_ip_from 0.0.0.0/0;
+    real_ip_header X-Forwarded-For;
+    real_ip_recursive on;
     # SSL configuration
     ssl_certificate /etc/nginx/certs/tls.crt;
     ssl_certificate_key /etc/nginx/certs/tls.key;
