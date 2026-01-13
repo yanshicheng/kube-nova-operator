@@ -72,12 +72,12 @@ func buildWebDeployment(kn *kubenovav1.KubeNova, namespace string) *appsv1.Deplo
 	}
 
 	labels := map[string]string{
-		"app":                          "kube-nova-web",
-		"tier":                         "frontend",
-		"app.kubernetes.io/name":       "kube-nova",
-		"app.kubernetes.io/instance":   kn.Name,
-		"app.kubernetes.io/component":  "web",
-		"app.kubernetes.io/managed-by": "kube-nova-operator",
+		"app":                         "kube-nova-web",
+		"tier":                        "frontend",
+		"app.ikubeops.com/name":       "kube-nova",
+		"app.ikubeops.com/instance":   kn.Name,
+		"app.ikubeops.com/component":  "web",
+		"app.ikubeops.com/managed-by": "kube-nova-operator",
 	}
 
 	deployment := &appsv1.Deployment{
@@ -241,12 +241,12 @@ func getWebPorts(kn *kubenovav1.KubeNova) []corev1.ContainerPort {
 // buildWebService 构建 Web Service
 func buildWebService(kn *kubenovav1.KubeNova, namespace string) *corev1.Service {
 	labels := map[string]string{
-		"app":                          "kube-nova-web",
-		"tier":                         "frontend",
-		"app.kubernetes.io/name":       "kube-nova",
-		"app.kubernetes.io/instance":   kn.Name,
-		"app.kubernetes.io/component":  "web",
-		"app.kubernetes.io/managed-by": "kube-nova-operator",
+		"app":                         "kube-nova-web",
+		"tier":                        "frontend",
+		"app.ikubeops.com/name":       "kube-nova",
+		"app.ikubeops.com/instance":   kn.Name,
+		"app.ikubeops.com/component":  "web",
+		"app.ikubeops.com/managed-by": "kube-nova-operator",
 	}
 
 	service := &corev1.Service{
@@ -317,12 +317,12 @@ func buildWebIngress(kn *kubenovav1.KubeNova, namespace string) *networkingv1.In
 	}
 
 	labels := map[string]string{
-		"app":                          "kube-nova-web",
-		"tier":                         "frontend",
-		"app.kubernetes.io/name":       "kube-nova",
-		"app.kubernetes.io/instance":   kn.Name,
-		"app.kubernetes.io/component":  "web",
-		"app.kubernetes.io/managed-by": "kube-nova-operator",
+		"app":                         "kube-nova-web",
+		"tier":                        "frontend",
+		"app.ikubeops.com/name":       "kube-nova",
+		"app.ikubeops.com/instance":   kn.Name,
+		"app.ikubeops.com/component":  "web",
+		"app.ikubeops.com/managed-by": "kube-nova-operator",
 	}
 
 	pathTypePrefix := networkingv1.PathTypePrefix

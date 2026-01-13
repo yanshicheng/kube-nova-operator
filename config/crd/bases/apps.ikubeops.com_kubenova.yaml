@@ -68,7 +68,7 @@ spec:
                     description: Password Redis 密码(可选，如果 Redis 无密码可不填)
                     type: string
                   pingTimeout:
-                    default: 3s
+                    default: 30s
                     description: PingTimeout Ping 超时时间
                     type: string
                   port:

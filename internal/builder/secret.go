@@ -102,9 +102,9 @@ func BuildSecret(kn *kubenovav1.KubeNova, namespace string, nodeIP string, nodeP
 
 	// Webhook 配置
 	if kn.Spec.Services.WebhookToken != "" {
-		data["ALERTMANAGER_WEBHOOK_TOKEN"] = []byte(kn.Spec.Services.WebhookToken)
+		data["WEBHOOK_TOKEN"] = []byte(kn.Spec.Services.WebhookToken)
 	} else {
-		data["ALERTMANAGER_WEBHOOK_TOKEN"] = []byte("")
+		data["WEBHOOK_TOKEN"] = []byte("")
 	}
 
 	// Jaeger 链路追踪配置
@@ -137,9 +137,9 @@ func BuildSecret(kn *kubenovav1.KubeNova, namespace string, nodeIP string, nodeP
 			Name:      "kube-nova-secret",
 			Namespace: namespace,
 			Labels: map[string]string{
-				"app.kubernetes.io/name":       "kube-nova",
-				"app.kubernetes.io/instance":   kn.Name,
-				"app.kubernetes.io/managed-by": "kube-nova-operator",
+				"app.ikubeops.com/name":       "kube-nova",
+				"app.ikubeops.com/instance":   kn.Name,
+				"app.ikubeops.com/managed-by": "kube-nova-operator",
 			},
 		},
 		Type: corev1.SecretTypeOpaque,

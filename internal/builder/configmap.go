@@ -150,7 +150,7 @@ Cache:
   PingTimeout: ${REDIS_PING_TIMEOUT}
 
 Mysql:
-  DataSource: ${MYSQL_USER}:${MYSQL_PASSWORD}@tcp(${MYSQL_HOST}:${MYSQL_PORT})/${MYSQL_DATABASE}?charset=utf8mb4&parseTime=True&loc=Local&timeout=10s
+  DataSource: ${MYSQL_USER}:${MYSQL_PASSWORD}@tcp(${MYSQL_HOST}:${MYSQL_PORT})/${MYSQL_DATABASE}?charset=utf8mb4&parseTime=True&loc=Local&timeout=30s
   MaxOpenConns: ${MYSQL_MAX_OPEN_CONNS}
   MaxIdleConns: ${MYSQL_MAX_IDLE_CONNS}
   ConnMaxLifetime: ${MYSQL_CONN_MAX_LIFETIME}
@@ -204,7 +204,7 @@ Timeout: ${DEFAULT_TIMEOUT}
 MaxBytes: 10485760
 
 Webhook:
-  AlertmanagerToken: ${ALERTMANAGER_WEBHOOK_TOKEN}
+  Token: ${WEBHOOK_TOKEN}
 
 DevServer:
   Enabled: true
@@ -313,7 +313,7 @@ Cache:
   PingTimeout: ${REDIS_PING_TIMEOUT}
 
 Mysql:
-  DataSource: ${MYSQL_USER}:${MYSQL_PASSWORD}@tcp(${MYSQL_HOST}:${MYSQL_PORT})/${MYSQL_DATABASE}?charset=utf8mb4&parseTime=True&loc=Local&timeout=10s
+  DataSource: ${MYSQL_USER}:${MYSQL_PASSWORD}@tcp(${MYSQL_HOST}:${MYSQL_PORT})/${MYSQL_DATABASE}?charset=utf8mb4&parseTime=True&loc=Local&timeout=30s
   MaxOpenConns: ${MYSQL_MAX_OPEN_CONNS}
   MaxIdleConns: ${MYSQL_MAX_IDLE_CONNS}
   ConnMaxLifetime: ${MYSQL_CONN_MAX_LIFETIME}
@@ -539,7 +539,7 @@ Cache:
   PingTimeout: ${REDIS_PING_TIMEOUT}
 
 Mysql:
-  DataSource: ${MYSQL_USER}:${MYSQL_PASSWORD}@tcp(${MYSQL_HOST}:${MYSQL_PORT})/${MYSQL_DATABASE}?charset=utf8mb4&parseTime=True&loc=Local&timeout=10s
+  DataSource: ${MYSQL_USER}:${MYSQL_PASSWORD}@tcp(${MYSQL_HOST}:${MYSQL_PORT})/${MYSQL_DATABASE}?charset=utf8mb4&parseTime=True&loc=Local&timeout=30s
   MaxOpenConns: ${MYSQL_MAX_OPEN_CONNS}
   MaxIdleConns: ${MYSQL_MAX_IDLE_CONNS}
   ConnMaxLifetime: ${MYSQL_CONN_MAX_LIFETIME}
@@ -551,6 +551,12 @@ DBCache:
     Tls: ${REDIS_TLS}
     NonBlock: ${REDIS_NONBLOCK}
     PingTimeout: ${REDIS_PING_TIMEOUT}
+
+ManagerRpc:
+  Target: k8s://${POD_NAMESPACE}/manager-rpc:30011
+  Optional: true
+  NonBlock: true
+  Timeout: ${DEFAULT_TIMEOUT}
 `
 
 	return &corev1.ConfigMap{
@@ -568,8 +574,8 @@ DBCache:
 // getCommonLabels 获取公共标签
 func getCommonLabels(kn *kubenovav1.KubeNova) map[string]string {
 	return map[string]string{
-		"app.kubernetes.io/name":       "kube-nova",
-		"app.kubernetes.io/instance":   kn.Name,
-		"app.kubernetes.io/managed-by": "kube-nova-operator",
+		"app.ikubeops.com/name":       "kube-nova",
+		"app.ikubeops.com/instance":   kn.Name,
+		"app.ikubeops.com/managed-by": "kube-nova-operator",
 	}
 }

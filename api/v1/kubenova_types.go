@@ -142,7 +142,7 @@ type CacheConfig struct {
 	NonBlock bool `json:"nonBlock,omitempty"`
 
 	// PingTimeout Ping 超时时间
-	// +kubebuilder:default="3s"
+	// +kubebuilder:default="30s"
 	PingTimeout string `json:"pingTimeout,omitempty"`
 }
 

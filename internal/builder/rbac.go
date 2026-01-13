@@ -33,28 +33,27 @@ func BuildServiceAccount(kn *kubenovav1.KubeNova, namespace string) *corev1.Serv
 			Name:      ServiceAccountName,
 			Namespace: namespace,
 			Labels: map[string]string{
-				"app.kubernetes.io/name":       "kube-nova",
-				"app.kubernetes.io/instance":   kn.Name,
-				"app.kubernetes.io/managed-by": "kube-nova-operator",
-				"app.kubernetes.io/namespace":  namespace,
-				"app.kubernetes.io/component":  "rbac",
+				"app.ikubeops.com/name":       "kube-nova",
+				"app.ikubeops.com/instance":   kn.Name,
+				"app.ikubeops.com/managed-by": "kube-nova-operator",
+				"app.ikubeops.com/namespace":  namespace,
+				"app.ikubeops.com/component":  "rbac",
 			},
 		},
 	}
 }
 
 // BuildClusterRoleBinding 构建 ClusterRoleBinding
-// 名称格式: kube-nova-{namespace}-{instance-name}-cluster-admin
 func BuildClusterRoleBinding(kn *kubenovav1.KubeNova, namespace string) *rbacv1.ClusterRoleBinding {
 	return &rbacv1.ClusterRoleBinding{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: fmt.Sprintf("kube-nova-%s-%s-cluster-admin", namespace, kn.Name),
 			Labels: map[string]string{
-				"app.kubernetes.io/name":       "kube-nova",
-				"app.kubernetes.io/instance":   kn.Name,
-				"app.kubernetes.io/managed-by": "kube-nova-operator",
-				"app.kubernetes.io/namespace":  namespace,
-				"app.kubernetes.io/component":  "rbac",
+				"app.ikubeops.com/name":       "kube-nova",
+				"app.ikubeops.com/instance":   kn.Name,
+				"app.ikubeops.com/managed-by": "kube-nova-operator",
+				"app.ikubeops.com/namespace":  namespace,
+				"app.ikubeops.com/component":  "rbac",
 			},
 		},
 		Subjects: []rbacv1.Subject{

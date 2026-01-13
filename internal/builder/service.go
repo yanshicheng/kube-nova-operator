@@ -188,12 +188,12 @@ func buildDeployment(kn *kubenovav1.KubeNova, namespace string, cfg *serviceConf
 	}
 
 	labels := map[string]string{
-		"app":                          cfg.Name,
-		"component":                    cfg.Component,
-		"app.kubernetes.io/name":       "kube-nova",
-		"app.kubernetes.io/instance":   kn.Name,
-		"app.kubernetes.io/component":  cfg.Component,
-		"app.kubernetes.io/managed-by": "kube-nova-operator",
+		"app":                         cfg.Name,
+		"component":                   cfg.Component,
+		"app.ikubeops.com/name":       "kube-nova",
+		"app.ikubeops.com/instance":   kn.Name,
+		"app.ikubeops.com/component":  cfg.Component,
+		"app.ikubeops.com/managed-by": "kube-nova-operator",
 	}
 
 	deployment := &appsv1.Deployment{
