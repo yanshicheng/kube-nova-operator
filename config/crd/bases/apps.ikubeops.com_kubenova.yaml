@@ -341,6 +341,34 @@ spec:
                           Image 完整镜像名称(如果需要覆盖全局配置)
                           例如：registry.cn-hangzhou.aliyuncs.com/kube-nova/portal-api:v1.0.0
                         type: string
+                      leaderElection:
+                        description: |-
+                          LeaderElection 服务级别的 Leader Election 配置
+                          如果配置，将覆盖全局 Leader Election 配置
+                        properties:
+                          enabled:
+                            default: false
+                            description: Enabled 是否启用 Leader Election 模式
+                            type: boolean
+                          leaseDuration:
+                            default: 15s
+                            description: LeaseDuration 租约有效期
+                            type: string
+                          leaseName:
+                            description: |-
+                              LeaseName Lease 资源名称（会自动创建）
+                              如果不指定，将使用服务名称作为默认值
+                              注意：Lease 资源会自动创建在 KubeNova 资源所在的命名空间中
+                            type: string
+                          renewDeadline:
+                            default: 10s
+                            description: RenewDeadline 续约超时
+                            type: string
+                          retryPeriod:
+                            default: 2s
+                            description: RetryPeriod 重试间隔
+                            type: string
+                        type: object
                       replicas:
                         default: 2
                         description: Replicas 副本数
@@ -578,6 +606,34 @@ spec:
                           Image 完整镜像名称(如果需要覆盖全局配置)
                           例如：registry.cn-hangzhou.aliyuncs.com/kube-nova/portal-api:v1.0.0
                         type: string
+                      leaderElection:
+                        description: |-
+                          LeaderElection 服务级别的 Leader Election 配置
+                          如果配置，将覆盖全局 Leader Election 配置
+                        properties:
+                          enabled:
+                            default: false
+                            description: Enabled 是否启用 Leader Election 模式
+                            type: boolean
+                          leaseDuration:
+                            default: 15s
+                            description: LeaseDuration 租约有效期
+                            type: string
+                          leaseName:
+                            description: |-
+                              LeaseName Lease 资源名称（会自动创建）
+                              如果不指定，将使用服务名称作为默认值
+                              注意：Lease 资源会自动创建在 KubeNova 资源所在的命名空间中
+                            type: string
+                          renewDeadline:
+                            default: 10s
+                            description: RenewDeadline 续约超时
+                            type: string
+                          retryPeriod:
+                            default: 2s
+                            description: RetryPeriod 重试间隔
+                            type: string
+                        type: object
                       replicas:
                         default: 2
                         description: Replicas 副本数
@@ -683,6 +739,34 @@ spec:
                     required:
                     - accessSecret
                     - refreshSecret
+                    type: object
+                  leaderElection:
+                    description: |-
+                      LeaderElection 全局 Leader Election 配置(可选)
+                      如果服务级别未配置，则使用此全局配置
+                    properties:
+                      enabled:
+                        default: false
+                        description: Enabled 是否启用 Leader Election 模式
+                        type: boolean
+                      leaseDuration:
+                        default: 15s
+                        description: LeaseDuration 租约有效期
+                        type: string
+                      leaseName:
+                        description: |-
+                          LeaseName Lease 资源名称（会自动创建）
+                          如果不指定，将使用服务名称作为默认值
+                          注意：Lease 资源会自动创建在 KubeNova 资源所在的命名空间中
+                        type: string
+                      renewDeadline:
+                        default: 10s
+                        description: RenewDeadline 续约超时
+                        type: string
+                      retryPeriod:
+                        default: 2s
+                        description: RetryPeriod 重试间隔
+                        type: string
                     type: object
                   managerAPI:
                     description: ManagerAPI Manager API 服务配置
@@ -854,6 +938,34 @@ spec:
                           Image 完整镜像名称(如果需要覆盖全局配置)
                           例如：registry.cn-hangzhou.aliyuncs.com/kube-nova/portal-api:v1.0.0
                         type: string
+                      leaderElection:
+                        description: |-
+                          LeaderElection 服务级别的 Leader Election 配置
+                          如果配置，将覆盖全局 Leader Election 配置
+                        properties:
+                          enabled:
+                            default: false
+                            description: Enabled 是否启用 Leader Election 模式
+                            type: boolean
+                          leaseDuration:
+                            default: 15s
+                            description: LeaseDuration 租约有效期
+                            type: string
+                          leaseName:
+                            description: |-
+                              LeaseName Lease 资源名称（会自动创建）
+                              如果不指定，将使用服务名称作为默认值
+                              注意：Lease 资源会自动创建在 KubeNova 资源所在的命名空间中
+                            type: string
+                          renewDeadline:
+                            default: 10s
+                            description: RenewDeadline 续约超时
+                            type: string
+                          retryPeriod:
+                            default: 2s
+                            description: RetryPeriod 重试间隔
+                            type: string
+                        type: object
                       replicas:
                         default: 2
                         description: Replicas 副本数
@@ -1091,6 +1203,34 @@ spec:
                           Image 完整镜像名称(如果需要覆盖全局配置)
                           例如：registry.cn-hangzhou.aliyuncs.com/kube-nova/portal-api:v1.0.0
                         type: string
+                      leaderElection:
+                        description: |-
+                          LeaderElection 服务级别的 Leader Election 配置
+                          如果配置，将覆盖全局 Leader Election 配置
+                        properties:
+                          enabled:
+                            default: false
+                            description: Enabled 是否启用 Leader Election 模式
+                            type: boolean
+                          leaseDuration:
+                            default: 15s
+                            description: LeaseDuration 租约有效期
+                            type: string
+                          leaseName:
+                            description: |-
+                              LeaseName Lease 资源名称（会自动创建）
+                              如果不指定，将使用服务名称作为默认值
+                              注意：Lease 资源会自动创建在 KubeNova 资源所在的命名空间中
+                            type: string
+                          renewDeadline:
+                            default: 10s
+                            description: RenewDeadline 续约超时
+                            type: string
+                          retryPeriod:
+                            default: 2s
+                            description: RetryPeriod 重试间隔
+                            type: string
+                        type: object
                       replicas:
                         default: 2
                         description: Replicas 副本数
@@ -1343,6 +1483,34 @@ spec:
                           Image 完整镜像名称(如果需要覆盖全局配置)
                           例如：registry.cn-hangzhou.aliyuncs.com/kube-nova/portal-api:v1.0.0
                         type: string
+                      leaderElection:
+                        description: |-
+                          LeaderElection 服务级别的 Leader Election 配置
+                          如果配置，将覆盖全局 Leader Election 配置
+                        properties:
+                          enabled:
+                            default: false
+                            description: Enabled 是否启用 Leader Election 模式
+                            type: boolean
+                          leaseDuration:
+                            default: 15s
+                            description: LeaseDuration 租约有效期
+                            type: string
+                          leaseName:
+                            description: |-
+                              LeaseName Lease 资源名称（会自动创建）
+                              如果不指定，将使用服务名称作为默认值
+                              注意：Lease 资源会自动创建在 KubeNova 资源所在的命名空间中
+                            type: string
+                          renewDeadline:
+                            default: 10s
+                            description: RenewDeadline 续约超时
+                            type: string
+                          retryPeriod:
+                            default: 2s
+                            description: RetryPeriod 重试间隔
+                            type: string
+                        type: object
                       replicas:
                         default: 2
                         description: Replicas 副本数
@@ -1580,6 +1748,34 @@ spec:
                           Image 完整镜像名称(如果需要覆盖全局配置)
                           例如：registry.cn-hangzhou.aliyuncs.com/kube-nova/portal-api:v1.0.0
                         type: string
+                      leaderElection:
+                        description: |-
+                          LeaderElection 服务级别的 Leader Election 配置
+                          如果配置，将覆盖全局 Leader Election 配置
+                        properties:
+                          enabled:
+                            default: false
+                            description: Enabled 是否启用 Leader Election 模式
+                            type: boolean
+                          leaseDuration:
+                            default: 15s
+                            description: LeaseDuration 租约有效期
+                            type: string
+                          leaseName:
+                            description: |-
+                              LeaseName Lease 资源名称（会自动创建）
+                              如果不指定，将使用服务名称作为默认值
+                              注意：Lease 资源会自动创建在 KubeNova 资源所在的命名空间中
+                            type: string
+                          renewDeadline:
+                            default: 10s
+                            description: RenewDeadline 续约超时
+                            type: string
+                          retryPeriod:
+                            default: 2s
+                            description: RetryPeriod 重试间隔
+                            type: string
+                        type: object
                       replicas:
                         default: 2
                         description: Replicas 副本数
@@ -1820,6 +2016,34 @@ spec:
                           Image 完整镜像名称(如果需要覆盖全局配置)
                           例如：registry.cn-hangzhou.aliyuncs.com/kube-nova/portal-api:v1.0.0
                         type: string
+                      leaderElection:
+                        description: |-
+                          LeaderElection 服务级别的 Leader Election 配置
+                          如果配置，将覆盖全局 Leader Election 配置
+                        properties:
+                          enabled:
+                            default: false
+                            description: Enabled 是否启用 Leader Election 模式
+                            type: boolean
+                          leaseDuration:
+                            default: 15s
+                            description: LeaseDuration 租约有效期
+                            type: string
+                          leaseName:
+                            description: |-
+                              LeaseName Lease 资源名称（会自动创建）
+                              如果不指定，将使用服务名称作为默认值
+                              注意：Lease 资源会自动创建在 KubeNova 资源所在的命名空间中
+                            type: string
+                          renewDeadline:
+                            default: 10s
+                            description: RenewDeadline 续约超时
+                            type: string
+                          retryPeriod:
+                            default: 2s
+                            description: RetryPeriod 重试间隔
+                            type: string
+                        type: object
                       replicas:
                         default: 2
                         description: Replicas 副本数

@@ -64,6 +64,13 @@ spec:
       refreshExpire: 604800
       refreshAfter: 604800
 
+    # 全局 Leader Election 配置
+    leaderElection:
+      enabled: true
+      leaseDuration: "15s"
+      renewDeadline: "10s"
+      retryPeriod: "2s"
+
     # Portal 配置（可选）
     portal:
       name: "Kube-Nova 云原生平台"

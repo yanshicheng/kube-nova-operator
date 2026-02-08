@@ -132,6 +132,24 @@ func BuildSecret(kn *kubenovav1.KubeNova, namespace string, nodeIP string, nodeP
 	// 注入镜像配置
 	data["INJECT_IMAGE"] = []byte(kn.Spec.Services.InjectImage)
 
+	// 全局 Leader Election 配置
+	// 注意：LeaseNamespace 直接使用 KubeNova 资源所在的 namespace，无需用户手动指定
+	if kn.Spec.Services.LeaderElection != nil && kn.Spec.Services.LeaderElection.Enabled {
+		data["LEADER_ELECTION_ENABLED"] = []byte("true")
+		data["LEADER_ELECTION_LEASE_NAME"] = []byte(kn.Spec.Services.LeaderElection.GetLeaseName(""))
+		data["LEADER_ELECTION_LEASE_NAMESPACE"] = []byte(namespace)
+		data["LEADER_ELECTION_LEASE_DURATION"] = []byte(kn.Spec.Services.LeaderElection.GetLeaseDuration())
+		data["LEADER_ELECTION_RENEW_DEADLINE"] = []byte(kn.Spec.Services.LeaderElection.GetRenewDeadline())
+		data["LEADER_ELECTION_RETRY_PERIOD"] = []byte(kn.Spec.Services.LeaderElection.GetRetryPeriod())
+	} else {
+		data["LEADER_ELECTION_ENABLED"] = []byte("false")
+		data["LEADER_ELECTION_LEASE_NAME"] = []byte("")
+		data["LEADER_ELECTION_LEASE_NAMESPACE"] = []byte("")
+		data["LEADER_ELECTION_LEASE_DURATION"] = []byte("15s")
+		data["LEADER_ELECTION_RENEW_DEADLINE"] = []byte("10s")
+		data["LEADER_ELECTION_RETRY_PERIOD"] = []byte("2s")
+	}
+
 	return &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "kube-nova-secret",

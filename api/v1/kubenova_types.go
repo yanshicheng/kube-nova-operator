@@ -238,6 +238,11 @@ type ServicesConfig struct {
 	// +kubebuilder:default="registry.cn-hangzhou.aliyuncs.com/kube-nova/network-multitool:latest"
 	InjectImage string `json:"injectImage,omitempty"`
 
+	// LeaderElection 全局 Leader Election 配置(可选)
+	// 如果服务级别未配置，则使用此全局配置
+	// +optional
+	LeaderElection *LeaderElectionConfig `json:"leaderElection,omitempty"`
+
 	// PortalAPI Portal API 服务配置
 	// +optional
 	PortalAPI *ServiceConfig `json:"portalAPI,omitempty"`
@@ -292,6 +297,34 @@ type JWTConfig struct {
 	RefreshAfter int64 `json:"refreshAfter,omitempty"`
 }
 
+// LeaderElectionConfig Leader Election 配置
+type LeaderElectionConfig struct {
+	// Enabled 是否启用 Leader Election 模式
+	// +kubebuilder:default=false
+	Enabled bool `json:"enabled,omitempty"`
+
+	// LeaseName Lease 资源名称（会自动创建）
+	// 如果不指定，将使用服务名称作为默认值
+	// 注意：Lease 资源会自动创建在 KubeNova 资源所在的命名空间中
+	// +optional
+	LeaseName string `json:"leaseName,omitempty"`
+
+	// LeaseDuration 租约有效期
+	// +kubebuilder:default="15s"
+	// +optional
+	LeaseDuration string `json:"leaseDuration,omitempty"`
+
+	// RenewDeadline 续约超时
+	// +kubebuilder:default="10s"
+	// +optional
+	RenewDeadline string `json:"renewDeadline,omitempty"`
+
+	// RetryPeriod 重试间隔
+	// +kubebuilder:default="2s"
+	// +optional
+	RetryPeriod string `json:"retryPeriod,omitempty"`
+}
+
 // PortalConfig Portal 门户配置
 type PortalConfig struct {
 	// Name Portal 名称
@@ -331,6 +364,11 @@ type ServiceConfig struct {
 	// Env 额外的环境变量
 	// +optional
 	Env []corev1.EnvVar `json:"env,omitempty"`
+
+	// LeaderElection 服务级别的 Leader Election 配置
+	// 如果配置，将覆盖全局 Leader Election 配置
+	// +optional
+	LeaderElection *LeaderElectionConfig `json:"leaderElection,omitempty"`
 }
 
 // WebConfig Web 前端配置
@@ -935,4 +973,52 @@ func (d *DatabaseConfig) GetConnMaxLifetime() string {
 		return "30m"
 	}
 	return d.ConnMaxLifetime
+}
+
+// GetEffectiveLeaderElection 获取服务的有效 Leader Election 配置
+// 优先级：服务级别 > 全局级别
+func (s *ServiceConfig) GetEffectiveLeaderElection(globalConfig *LeaderElectionConfig) *LeaderElectionConfig {
+	// 如果服务级别配置了，使用服务级别配置
+	if s != nil && s.LeaderElection != nil {
+		return s.LeaderElection
+	}
+	// 否则使用全局配置
+	return globalConfig
+}
+
+// IsLeaderElectionEnabled 检查 Leader Election 是否启用
+func (l *LeaderElectionConfig) IsLeaderElectionEnabled() bool {
+	return l != nil && l.Enabled
+}
+
+// GetLeaseName 获取 Lease 名称，如果未配置则返回默认值
+func (l *LeaderElectionConfig) GetLeaseName(defaultName string) string {
+	if l == nil || l.LeaseName == "" {
+		return defaultName
+	}
+	return l.LeaseName
+}
+
+// GetLeaseDuration 获取租约有效期
+func (l *LeaderElectionConfig) GetLeaseDuration() string {
+	if l == nil || l.LeaseDuration == "" {
+		return "15s"
+	}
+	return l.LeaseDuration
+}
+
+// GetRenewDeadline 获取续约超时
+func (l *LeaderElectionConfig) GetRenewDeadline() string {
+	if l == nil || l.RenewDeadline == "" {
+		return "10s"
+	}
+	return l.RenewDeadline
+}
+
+// GetRetryPeriod 获取重试间隔
+func (l *LeaderElectionConfig) GetRetryPeriod() string {
+	if l == nil || l.RetryPeriod == "" {
+		return "2s"
+	}
+	return l.RetryPeriod
 }

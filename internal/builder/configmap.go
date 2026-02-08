@@ -104,6 +104,9 @@ PortalRpc:
 
 // buildPortalRPCConfigMap 构建 Portal RPC ConfigMap
 func buildPortalRPCConfigMap(kn *kubenovav1.KubeNova, namespace string) *corev1.ConfigMap {
+	// 获取 portal-rpc 的有效 Leader Election 配置
+	leaderElectionConfig := getEffectiveLeaderElectionForService(kn, kn.Spec.Services.PortalRPC, "portal-rpc", namespace)
+
 	config := `Name: portal.rpc
 ListenOn: 0.0.0.0:30010
 Mode: pro
@@ -180,7 +183,17 @@ AuthConfig:
   RefreshSecret: ${JWT_REFRESH_SECRET}
   RefreshExpire: ${JWT_REFRESH_EXPIRE}
   RefreshAfter: ${JWT_REFRESH_AFTER}
-`
+
+Aggregator:
+  Enabled: true
+  MaxBufferSize: 1000
+  GlobalBufferWindow: 30s
+  SeverityWindows:
+    Critical: 0s
+    Warning: 1m
+    Info: 1m
+    Default: 1m
+` + leaderElectionConfig
 
 	return &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
@@ -270,6 +283,9 @@ PortalRpc:
 
 // buildManagerRPCConfigMap 构建 Manager RPC ConfigMap
 func buildManagerRPCConfigMap(kn *kubenovav1.KubeNova, namespace string) *corev1.ConfigMap {
+	// 获取 manager-rpc 的有效 Leader Election 配置
+	leaderElectionConfig := getEffectiveLeaderElectionForService(kn, kn.Spec.Services.ManagerRPC, "manager-rpc", namespace)
+
 	config := `Name: manager.rpc
 ListenOn: 0.0.0.0:30011
 Mode: pro
@@ -331,7 +347,7 @@ PortalRpc:
   Optional: true
   NonBlock: true
   Timeout: ${DEFAULT_TIMEOUT}
-`
+` + leaderElectionConfig
 
 	return &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
@@ -578,4 +594,40 @@ func getCommonLabels(kn *kubenovav1.KubeNova) map[string]string {
 		"app.ikubeops.com/instance":   kn.Name,
 		"app.ikubeops.com/managed-by": "kube-nova-operator",
 	}
+}
+
+// getEffectiveLeaderElectionForService 获取服务的有效 Leader Election 配置并生成 YAML 配置
+// 优先级：服务级别 > 全局级别
+func getEffectiveLeaderElectionForService(kn *kubenovav1.KubeNova, serviceConfig *kubenovav1.ServiceConfig, serviceName, namespace string) string {
+	var leConfig *kubenovav1.LeaderElectionConfig
+
+	// 优先使用服务级别配置
+	if serviceConfig != nil && serviceConfig.LeaderElection != nil {
+		leConfig = serviceConfig.LeaderElection
+	} else if kn.Spec.Services.LeaderElection != nil {
+		// 否则使用全局配置
+		leConfig = kn.Spec.Services.LeaderElection
+	}
+
+	// 如果没有配置或未启用，返回空字符串
+	if leConfig == nil || !leConfig.Enabled {
+		return ""
+	}
+
+	// 生成 Leader Election 配置 YAML
+	// 注意：LeaseNamespace 直接使用 KubeNova 资源所在的 namespace，无需用户手动指定
+	leaseName := leConfig.GetLeaseName(serviceName + "-leader")
+	leaseDuration := leConfig.GetLeaseDuration()
+	renewDeadline := leConfig.GetRenewDeadline()
+	retryPeriod := leConfig.GetRetryPeriod()
+
+	return `
+LeaderElection:
+  Enabled: true
+  LeaseName: "` + leaseName + `"
+  LeaseNamespace: "` + namespace + `"
+  LeaseDuration: ` + leaseDuration + `
+  RenewDeadline: ` + renewDeadline + `
+  RetryPeriod: ` + retryPeriod + `
+`
 }
