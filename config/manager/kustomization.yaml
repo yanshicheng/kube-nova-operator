@@ -5,4 +5,4 @@ kind: Kustomization
 images:
 - name: controller
   newName: registry.cn-hangzhou.aliyuncs.com/kube-nova/kube-nova-operator
-  newTag: latest
+  newTag: V0.2.0-BETA
