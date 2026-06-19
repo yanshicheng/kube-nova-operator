@@ -28,12 +28,28 @@ func BuildAllConfigMaps(kn *kubenovav1.KubeNova, namespace string) []*corev1.Con
 	configMaps := []*corev1.ConfigMap{
 		buildPortalAPIConfigMap(kn, namespace),
 		buildPortalRPCConfigMap(kn, namespace),
-		buildManagerAPIConfigMap(kn, namespace),
-		buildManagerRPCConfigMap(kn, namespace),
-		buildWorkloadAPIConfigMap(kn, namespace),
-		buildConsoleAPIConfigMap(kn, namespace),
-		buildConsoleRPCConfigMap(kn, namespace),
 	}
+
+	// K8s 管理模式(含 all)
+	if kn.IsK8sMode() {
+		configMaps = append(configMaps,
+			buildManagerAPIConfigMap(kn, namespace),
+			buildManagerRPCConfigMap(kn, namespace),
+			buildWorkloadAPIConfigMap(kn, namespace),
+			buildConsoleAPIConfigMap(kn, namespace),
+			buildConsoleRPCConfigMap(kn, namespace),
+		)
+	}
+
+	// DevOps 模式(含 all)
+	if kn.IsDevopsMode() {
+		configMaps = append(configMaps,
+			buildDevopsAPIConfigMap(kn, namespace),
+			buildDevopsManagerRPCConfigMap(kn, namespace),
+			buildDevopsPipelineRPCConfigMap(kn, namespace),
+		)
+	}
+
 	return configMaps
 }
 
@@ -347,6 +363,60 @@ PortalRpc:
   Optional: true
   NonBlock: true
   Timeout: ${DEFAULT_TIMEOUT}
+
+Webhook:
+  Token: ${WEBHOOK_TOKEN}
+
+LogSearch:
+  QueryMode: "platform"
+  HTTPPool:
+    MaxIdleConns: 100
+    MaxIdleConnsPerHost: 20
+    MaxConnsPerHost: 50
+    IdleConnTimeout: 90s
+    ResponseHeaderTimeout: 15s
+    TLSHandshakeTimeout: 10s
+    ExpectContinueTimeout: 1s
+  Elasticsearch:
+    DataStream: "logs-kube-nova-default"
+    IndexPattern: "logs-kube-nova-*"
+    FieldMapping:
+      Timestamp: "@timestamp"
+      Message: "message"
+      ProjectUuid: "project_uuid"
+      ClusterUuid: "cluster_uuid"
+      NamespaceName: "namespace_name"
+      ResourceName: "resource_name"
+      PodName: "pod_name"
+      ContainerName: "container_name"
+      PodIp: "pod_ip"
+      LogType: "log_type"
+      Level: "level"
+
+LogAlertEngine:
+  Enabled: true
+  Mode: "platform"
+  EvalInterval: 60s
+  MinEvalInterval: 15s
+  MaxEvalInterval: 300s
+  RuleSyncInterval: 30s
+  LockEnabled: true
+  LockTTL: 45s
+  NotifyRetryScanInterval: 15s
+  NotifyRetryBase: 30s
+  SilenceWindow: 10m
+  MaxNotifyRetry: 5
+  ClusterWorkers: 2
+  MaxBatchRules: 100
+  MaxQueryLimit: 500
+
+InspectionEngine:
+  Enabled: true
+  ScanInterval: 30s
+  LockEnabled: true
+  LockTTL: 10m
+  ClusterWorkers: 2
+  MaxBatchTasks: 50
 ` + leaderElectionConfig
 
 	return &corev1.ConfigMap{
@@ -578,6 +648,208 @@ ManagerRpc:
 	return &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "console-rpc-config",
+			Namespace: namespace,
+			Labels:    getCommonLabels(kn),
+		},
+		Data: map[string]string{
+			"config.yaml": config,
+		},
+	}
+}
+
+// buildDevopsAPIConfigMap 构建 Devops API ConfigMap
+func buildDevopsAPIConfigMap(kn *kubenovav1.KubeNova, namespace string) *corev1.ConfigMap {
+	config := `Name: devops-api
+Host: 0.0.0.0
+Port: 8813
+Mode: pro
+Timeout: ${DEFAULT_TIMEOUT}
+MaxBytes: 104857600
+
+Log:
+  ServiceName: devops-api
+  Mode: console
+  Encoding: plain
+  TimeFormat: "2006-01-02 15:04:05"
+  Path: logs
+  Level: info
+  MaxContentLength: 1024
+  Compress: false
+  Stat: true
+  KeepDays: 7
+  StackCooldownMillis: 100
+  MaxBackups: 0
+  MaxSize: 0
+  Rotation: daily
+
+Cache:
+  Host: ${REDIS_HOST}:${REDIS_PORT}
+  Type: ${REDIS_TYPE}
+  Pass: ${REDIS_PASSWORD}
+  Tls: ${REDIS_TLS}
+  NonBlock: ${REDIS_NONBLOCK}
+  PingTimeout: ${REDIS_PING_TIMEOUT}
+
+PortalRpc:
+  Target: k8s://${POD_NAMESPACE}/portal-rpc:30010
+  NonBlock: true
+  Timeout: ${DEFAULT_TIMEOUT}
+
+DevopsManagerRpc:
+  Target: k8s://${POD_NAMESPACE}/devops-manager-rpc:30031
+  NonBlock: true
+  Timeout: ${DEFAULT_TIMEOUT}
+
+DevopsPipelineRpc:
+  Target: k8s://${POD_NAMESPACE}/devops-pipeline-rpc:30032
+  NonBlock: true
+  Timeout: ${DEFAULT_TIMEOUT}
+
+DevopsQualityRpc:
+  Target: k8s://${POD_NAMESPACE}/devops-quality-rpc:30033
+  NonBlock: true
+  Timeout: ${DEFAULT_TIMEOUT}
+
+StorageConf:
+  Provider: s3
+  Endpoints: ["${MINIO_ENDPOINT}"]
+  EndpointProxy: ${MINIO_ENDPOINT_PROXY}
+  AccessKey: ${MINIO_ACCESS_KEY}
+  AccessSecret: ${MINIO_SECRET_KEY}
+  BucketName: ${MINIO_BUCKET}
+  CAFile: ${MINIO_CA_FILE}
+  CAKey: ${MINIO_CA_KEY}
+  ClientCertFile: ""
+  ClientKeyFile: ""
+  UseTLS: ${MINIO_USE_SSL}
+`
+
+	return &corev1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "devops-api-config",
+			Namespace: namespace,
+			Labels:    getCommonLabels(kn),
+		},
+		Data: map[string]string{
+			"config.yaml": config,
+		},
+	}
+}
+
+// buildDevopsManagerRPCConfigMap 构建 Devops Manager RPC ConfigMap
+func buildDevopsManagerRPCConfigMap(kn *kubenovav1.KubeNova, namespace string) *corev1.ConfigMap {
+	config := `Name: devops-manager.rpc
+ListenOn: 0.0.0.0:30031
+Mode: pro
+Timeout: ${DEFAULT_TIMEOUT}
+
+Log:
+  ServiceName: devops-manager-rpc
+  Mode: console
+  Encoding: plain
+  TimeFormat: "2006-01-02 15:04:05"
+  Path: logs
+  Level: info
+  MaxContentLength: 1024
+  Compress: false
+  Stat: true
+  KeepDays: 7
+  StackCooldownMillis: 100
+  MaxBackups: 0
+  MaxSize: 0
+  Rotation: daily
+
+Mongo:
+  Url: ${MONGO_URL}
+  Db: ${MONGO_DB}
+
+Bootstrap:
+  DefaultDataEnabled: false
+  TektonStepSyncEnabled: false
+
+Cache:
+  Host: ${REDIS_HOST}:${REDIS_PORT}
+  Type: ${REDIS_TYPE}
+  Pass: ${REDIS_PASSWORD}
+  Tls: ${REDIS_TLS}
+  NonBlock: ${REDIS_NONBLOCK}
+  PingTimeout: ${REDIS_PING_TIMEOUT}
+
+StorageConf:
+  Provider: minio
+  Endpoints: ["${MINIO_ENDPOINT}"]
+  EndpointProxy: ${MINIO_ENDPOINT_PROXY}
+  AccessKey: ${MINIO_ACCESS_KEY}
+  AccessSecret: ${MINIO_SECRET_KEY}
+  BucketName: ${MINIO_BUCKET}
+  CAFile: ${MINIO_CA_FILE}
+  CAKey: ${MINIO_CA_KEY}
+  ClientCertFile: ""
+  ClientKeyFile: ""
+  UseTLS: ${MINIO_USE_SSL}
+`
+
+	return &corev1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "devops-manager-rpc-config",
+			Namespace: namespace,
+			Labels:    getCommonLabels(kn),
+		},
+		Data: map[string]string{
+			"config.yaml": config,
+		},
+	}
+}
+
+// buildDevopsPipelineRPCConfigMap 构建 Devops Pipeline RPC ConfigMap
+func buildDevopsPipelineRPCConfigMap(kn *kubenovav1.KubeNova, namespace string) *corev1.ConfigMap {
+	config := `Name: devops-pipeline.rpc
+ListenOn: 0.0.0.0:30032
+Mode: pro
+Timeout: ${DEFAULT_TIMEOUT}
+
+Log:
+  ServiceName: devops-pipeline-rpc
+  Mode: console
+  Encoding: plain
+  TimeFormat: "2006-01-02 15:04:05"
+  Path: logs
+  Level: info
+  MaxContentLength: 1024
+  Compress: false
+  Stat: true
+  KeepDays: 7
+  StackCooldownMillis: 100
+  MaxBackups: 0
+  MaxSize: 0
+  Rotation: daily
+
+Mongo:
+  Url: ${MONGO_URL}
+  Db: ${MONGO_DB}
+
+Cache:
+  Host: ${REDIS_HOST}:${REDIS_PORT}
+  Type: ${REDIS_TYPE}
+  Pass: ${REDIS_PASSWORD}
+  Tls: ${REDIS_TLS}
+  NonBlock: ${REDIS_NONBLOCK}
+  PingTimeout: ${REDIS_PING_TIMEOUT}
+
+DevopsManagerRpc:
+  Target: k8s://${POD_NAMESPACE}/devops-manager-rpc:30031
+  NonBlock: true
+  Timeout: ${DEFAULT_TIMEOUT}
+
+DevopsQualityRpc:
+  Target: k8s://${POD_NAMESPACE}/devops-quality-rpc:30033
+  NonBlock: true
+  Timeout: ${DEFAULT_TIMEOUT}
+`
+
+	return &corev1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "devops-pipeline-rpc-config",
 			Namespace: namespace,
 			Labels:    getCommonLabels(kn),
 		},

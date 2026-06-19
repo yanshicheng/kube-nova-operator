@@ -1,20 +1,27 @@
+# ============================================================
+# KubeNova DevOps 模式部署示例
+# 部署范围: DevOps + Portal
+# 包含: portal-api, portal-rpc, devops-api,
+#       devops-manager-rpc, devops-pipeline-rpc
+# 注意: devops-quality-rpc 暂不部署
+# ============================================================
 apiVersion: apps.ikubeops.com/v1
 kind: KubeNova
 metadata:
-  name: kubenova-sample
+  name: kubenova-devops
   namespace: kube-nova
 spec:
-  # 部署模式: all(默认) = k8s + devops + portal
-  deploymentMode: all
+  # 部署模式: devops = DevOps + Portal
+  deploymentMode: devops
 
-  # 全局镜像仓库配置（可选）
+  # 全局镜像仓库配置
   imageRegistry:
     registry: "registry.cn-hangzhou.aliyuncs.com"
     organization: "kube-nova"
     tag: "latest"
     pullPolicy: Always
 
-  # 数据库配置（必填）
+  # MySQL 数据库配置(必填)
   database:
     host: "mysql"
     port: 3306
@@ -25,34 +32,30 @@ spec:
     maxIdleConns: 50
     connMaxLifetime: "30m"
 
-  # 缓存配置（必填）
+  # Redis 缓存配置(必填)
   cache:
     host: "redis"
     port: 6379
-    type: "node"  # node 或 cluster
+    type: "node"
     password: "2VOSiz0vhGtxaBJb"
     tls: false
     nonBlock: true
     pingTimeout: "3s"
 
-  # 对象存储配置（必填）
+  # MinIO 对象存储配置(必填)
   storage:
     endpoint: "minio-service:9000"
     accessKey: "kube-nova-admin"
     secretKey: "KubeNova@2024SecretKey!"
     bucket: "kube-nova"
-    endpointProxy: "http://kube-nova.ngw.ikubeops.local/storage/"
-    # TLS 证书配置（可选）
-    # tls:
-    #   enabled: true
-    #   secretName: "minio-tls-certs"  # 包含 public.crt 和 private.key
+    endpointProxy: "http://127.0.0.1:30088/storage/"
 
-  # MongoDB 配置(all/devops 模式必填)
+  # MongoDB 配置(devops/all 模式必填)
   mongo:
     url: "mongodb://root:12345678@mongo:27017/?authSource=admin"
     db: "kube_nova_devops"
 
-  # 链路追踪配置（可选）
+  # 链路追踪配置(可选)
   telemetry:
     enabled: true
     jaegerEndpoint: "http://jaeger-collector:14268/api/traces"
@@ -62,7 +65,7 @@ spec:
   services:
     globalTimeout: 30000
 
-    # JWT 配置（必填）
+    # JWT 配置(必填)
     jwt:
       accessSecret: "zk5Lp8m+0g7lvvLcnbUHPzQFEsRAmvNIn9tXdx0o80U="
       accessExpire: 86400
@@ -77,62 +80,38 @@ spec:
       renewDeadline: "10s"
       retryPeriod: "2s"
 
-    # Portal 配置（可选）
+    # Portal 配置
     portal:
       name: "Kube-Nova 云原生平台"
-      url: "http://kube-nova.ngw.ikubeops.local"
+      url: "http://127.0.0.1:30088"
       demoMode: false
 
-    # Webhook Token（可选）
+    # Webhook Token
     webhookToken: "mRwErqZaQVrxfyhiDQrdiQohAsONwSTtwhcmFXpCcaGavcINqorVoWINnSFFAijb"
 
-    # 注入镜像（可选）
+    # 注入镜像
     injectImage: "registry.cn-hangzhou.aliyuncs.com/kube-nova/network-multitool:latest"
 
-    # 各个服务的配置（可选，使用默认值）
+    # ========================================
+    # 各服务配置(可选)
+    # ========================================
     # portalAPI:
-    #   enabled: true
     #   replicas: 2
     # portalRPC:
-    #   enabled: true
-    #   replicas: 2
-    # managerAPI:
-    #   enabled: true
-    #   replicas: 2
-    # managerRPC:
-    #   enabled: true
-    #   replicas: 2
-    # workloadAPI:
-    #   enabled: true
-    #   replicas: 2
-    # consoleAPI:
-    #   enabled: true
-    #   replicas: 2
-    # consoleRPC:
-    #   enabled: true
     #   replicas: 2
     # devopsAPI:
-    #   enabled: true
     #   replicas: 2
     # devopsManagerRPC:
-    #   enabled: true
     #   replicas: 2
     # devopsPipelineRPC:
-    #   enabled: true
     #   replicas: 2
 
-  # ==================================================
-  # Web 前端配置（必填）
-  # ==================================================
+  # Web 前端配置(必填)
   web:
     replicas: 2
-    exposeType: "ingress"
-    ingress:
-      className: "nginx"
-      host: "kube-nova.ngw.ikubeops.local"
-      tls:
-        enabled: false
-
+    exposeType: "nodeport"
+    nodePort:
+      httpPort: 30088
     minioProxy:
       enabled: true
       pathPrefix: "/storage"

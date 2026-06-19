@@ -79,8 +79,8 @@ func BuildAllServices(kn *kubenovav1.KubeNova, namespace string) map[string]*Ser
 		})
 	}
 
-	// Manager API
-	if kn.Spec.Services.ManagerAPI == nil || kn.Spec.Services.ManagerAPI.IsServiceEnabled() {
+	// Manager API - 仅 k8s 或 all 模式部署
+	if kn.IsK8sMode() && (kn.Spec.Services.ManagerAPI == nil || kn.Spec.Services.ManagerAPI.IsServiceEnabled()) {
 		services["manager-api"] = buildService(kn, namespace, &serviceConfig{
 			Name:          "manager-api",
 			Port:          8811,
@@ -93,8 +93,8 @@ func BuildAllServices(kn *kubenovav1.KubeNova, namespace string) map[string]*Ser
 		})
 	}
 
-	// Manager RPC
-	if kn.Spec.Services.ManagerRPC == nil || kn.Spec.Services.ManagerRPC.IsServiceEnabled() {
+	// Manager RPC - 仅 k8s 或 all 模式部署
+	if kn.IsK8sMode() && (kn.Spec.Services.ManagerRPC == nil || kn.Spec.Services.ManagerRPC.IsServiceEnabled()) {
 		services["manager-rpc"] = buildService(kn, namespace, &serviceConfig{
 			Name:          "manager-rpc",
 			Port:          30011,
@@ -107,8 +107,8 @@ func BuildAllServices(kn *kubenovav1.KubeNova, namespace string) map[string]*Ser
 		})
 	}
 
-	// Workload API
-	if kn.Spec.Services.WorkloadAPI == nil || kn.Spec.Services.WorkloadAPI.IsServiceEnabled() {
+	// Workload API - 仅 k8s 或 all 模式部署
+	if kn.IsK8sMode() && (kn.Spec.Services.WorkloadAPI == nil || kn.Spec.Services.WorkloadAPI.IsServiceEnabled()) {
 		services["workload-api"] = buildService(kn, namespace, &serviceConfig{
 			Name:          "workload-api",
 			Port:          8812,
@@ -121,8 +121,8 @@ func BuildAllServices(kn *kubenovav1.KubeNova, namespace string) map[string]*Ser
 		})
 	}
 
-	// Console API
-	if kn.Spec.Services.ConsoleAPI == nil || kn.Spec.Services.ConsoleAPI.IsServiceEnabled() {
+	// Console API - 仅 k8s 或 all 模式部署
+	if kn.IsK8sMode() && (kn.Spec.Services.ConsoleAPI == nil || kn.Spec.Services.ConsoleAPI.IsServiceEnabled()) {
 		services["console-api"] = buildService(kn, namespace, &serviceConfig{
 			Name:          "console-api",
 			Port:          8818,
@@ -136,8 +136,8 @@ func BuildAllServices(kn *kubenovav1.KubeNova, namespace string) map[string]*Ser
 		})
 	}
 
-	// Console RPC
-	if kn.Spec.Services.ConsoleRPC == nil || kn.Spec.Services.ConsoleRPC.IsServiceEnabled() {
+	// Console RPC - 仅 k8s 或 all 模式部署
+	if kn.IsK8sMode() && (kn.Spec.Services.ConsoleRPC == nil || kn.Spec.Services.ConsoleRPC.IsServiceEnabled()) {
 		services["console-rpc"] = buildService(kn, namespace, &serviceConfig{
 			Name:          "console-rpc",
 			Port:          30018,
@@ -150,6 +150,66 @@ func BuildAllServices(kn *kubenovav1.KubeNova, namespace string) map[string]*Ser
 			NeedCache:     true,
 		})
 	}
+
+	// Devops API - 仅 devops 或 all 模式部署
+	if kn.IsDevopsMode() && (kn.Spec.Services.DevopsAPI == nil || kn.Spec.Services.DevopsAPI.IsServiceEnabled()) {
+		services["devops-api"] = buildService(kn, namespace, &serviceConfig{
+			Name:          "devops-api",
+			Port:          8813,
+			TargetPort:    8813,
+			MetricsPort:   0,
+			ConfigMapName: "devops-api-config",
+			Registry:      registry,
+			ServiceConfig: kn.Spec.Services.DevopsAPI,
+			Component:     "api",
+			NoMetrics:     true,
+		})
+	}
+
+	// Devops Manager RPC - 仅 devops 或 all 模式部署
+	if kn.IsDevopsMode() && (kn.Spec.Services.DevopsManagerRPC == nil || kn.Spec.Services.DevopsManagerRPC.IsServiceEnabled()) {
+		services["devops-manager-rpc"] = buildService(kn, namespace, &serviceConfig{
+			Name:          "devops-manager-rpc",
+			Port:          30031,
+			TargetPort:    30031,
+			MetricsPort:   0,
+			ConfigMapName: "devops-manager-rpc-config",
+			Registry:      registry,
+			ServiceConfig: kn.Spec.Services.DevopsManagerRPC,
+			Component:     "rpc",
+			NoMetrics:     true,
+		})
+	}
+
+	// Devops Pipeline RPC - 仅 devops 或 all 模式部署
+	if kn.IsDevopsMode() && (kn.Spec.Services.DevopsPipelineRPC == nil || kn.Spec.Services.DevopsPipelineRPC.IsServiceEnabled()) {
+		services["devops-pipeline-rpc"] = buildService(kn, namespace, &serviceConfig{
+			Name:          "devops-pipeline-rpc",
+			Port:          30032,
+			TargetPort:    30032,
+			MetricsPort:   0,
+			ConfigMapName: "devops-pipeline-rpc-config",
+			Registry:      registry,
+			ServiceConfig: kn.Spec.Services.DevopsPipelineRPC,
+			Component:     "rpc",
+			NoMetrics:     true,
+		})
+	}
+
+	// Devops Quality RPC - 暂不部署
+	// if kn.IsDevopsMode() && (kn.Spec.Services.DevopsQualityRPC == nil || kn.Spec.Services.DevopsQualityRPC.IsServiceEnabled()) {
+	// 	services["devops-quality-rpc"] = buildService(kn, namespace, &serviceConfig{
+	// 		Name:          "devops-quality-rpc",
+	// 		Port:          30033,
+	// 		TargetPort:    30033,
+	// 		MetricsPort:   0,
+	// 		ConfigMapName: "devops-quality-rpc-config",
+	// 		Registry:      registry,
+	// 		ServiceConfig: kn.Spec.Services.DevopsQualityRPC,
+	// 		Component:     "rpc",
+	// 		NoMetrics:     true,
+	// 	})
+	// }
 
 	return services
 }
@@ -167,6 +227,7 @@ type serviceConfig struct {
 	NeedMinIOCerts  bool
 	MinIOCertSecret string
 	NeedCache       bool
+	NoMetrics       bool
 }
 
 // buildService 构建单个服务
@@ -219,11 +280,16 @@ func buildDeployment(kn *kubenovav1.KubeNova, namespace string, cfg *serviceConf
 			Template: corev1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
 					Labels: labels,
-					Annotations: map[string]string{
-						"prometheus.io/scrape": "true",
-						"prometheus.io/port":   "9999",
-						"prometheus.io/path":   "/metrics",
-					},
+					Annotations: func() map[string]string {
+						if cfg.NoMetrics {
+							return nil
+						}
+						return map[string]string{
+							"prometheus.io/scrape": "true",
+							"prometheus.io/port":   "9999",
+							"prometheus.io/path":   "/metrics",
+						}
+					}(),
 				},
 				Spec: corev1.PodSpec{
 					ServiceAccountName: ServiceAccountName,
@@ -499,3 +565,111 @@ func getSecurityContext() *corev1.SecurityContext {
 		},
 	}
 }
+
+// buildContainerPorts 构建容器端口列表
+// NoMetrics 为 true 时只暴露主端口，不暴露 metrics 端口
+func buildContainerPorts(cfg *serviceConfig) []corev1.ContainerPort {
+	ports := []corev1.ContainerPort{
+		{
+			ContainerPort: cfg.TargetPort,
+			Protocol:      corev1.ProtocolTCP,
+		},
+	}
+	if !cfg.NoMetrics {
+		ports = append(ports, corev1.ContainerPort{
+			Name:          "metrics",
+			ContainerPort: cfg.MetricsPort,
+			Protocol:      corev1.ProtocolTCP,
+		})
+	}
+	return ports
+}
+
+// buildStartupProbe 构建启动探针
+// NoMetrics 为 true 时使用 TCP 探针检查主端口，否则使用 HTTP 探针检查 /healthz
+func buildStartupProbe(cfg *serviceConfig) *corev1.Probe {
+	if cfg.NoMetrics {
+		return &corev1.Probe{
+			ProbeHandler: corev1.ProbeHandler{
+				TCPSocket: &corev1.TCPSocketAction{
+					Port: intstr.FromInt32(cfg.TargetPort),
+				},
+			},
+			InitialDelaySeconds: 0,
+			PeriodSeconds:       5,
+			FailureThreshold:    12,
+			TimeoutSeconds:      3,
+		}
+	}
+	return &corev1.Probe{
+		ProbeHandler: corev1.ProbeHandler{
+			HTTPGet: &corev1.HTTPGetAction{
+				Path: "/healthz",
+				Port: intstr.FromInt32(cfg.MetricsPort),
+			},
+		},
+		InitialDelaySeconds: 0,
+		PeriodSeconds:       5,
+		FailureThreshold:    12,
+		TimeoutSeconds:      3,
+	}
+}
+
+// buildLivenessProbe 构建存活探针
+func buildLivenessProbe(cfg *serviceConfig) *corev1.Probe {
+	if cfg.NoMetrics {
+		return &corev1.Probe{
+			ProbeHandler: corev1.ProbeHandler{
+				TCPSocket: &corev1.TCPSocketAction{
+					Port: intstr.FromInt32(cfg.TargetPort),
+				},
+			},
+			InitialDelaySeconds: 30,
+			PeriodSeconds:       10,
+			FailureThreshold:    3,
+			TimeoutSeconds:      3,
+		}
+	}
+	return &corev1.Probe{
+		ProbeHandler: corev1.ProbeHandler{
+			HTTPGet: &corev1.HTTPGetAction{
+				Path: "/healthz",
+				Port: intstr.FromInt32(cfg.MetricsPort),
+			},
+		},
+		InitialDelaySeconds: 30,
+		PeriodSeconds:       10,
+		FailureThreshold:    3,
+		TimeoutSeconds:      3,
+	}
+}
+
+// buildReadinessProbe 构建就绪探针
+func buildReadinessProbe(cfg *serviceConfig) *corev1.Probe {
+	if cfg.NoMetrics {
+		return &corev1.Probe{
+			ProbeHandler: corev1.ProbeHandler{
+				TCPSocket: &corev1.TCPSocketAction{
+					Port: intstr.FromInt32(cfg.TargetPort),
+				},
+			},
+			InitialDelaySeconds: 10,
+			PeriodSeconds:       5,
+			FailureThreshold:    3,
+			TimeoutSeconds:      3,
+		}
+	}
+	return &corev1.Probe{
+		ProbeHandler: corev1.ProbeHandler{
+			HTTPGet: &corev1.HTTPGetAction{
+				Path: "/healthz",
+				Port: intstr.FromInt32(cfg.MetricsPort),
+			},
+		},
+		InitialDelaySeconds: 10,
+		PeriodSeconds:       5,
+		FailureThreshold:    3,
+		TimeoutSeconds:      3,
+	}
+}
+

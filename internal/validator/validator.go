@@ -28,6 +28,13 @@ func ValidateKubeNova(kn *kubenovav1.KubeNova) error {
 		return fmt.Errorf("存储配置错误: %w", err)
 	}
 
+	// 验证 MongoDB 配置(devops 或 all 模式时必填)
+	if kn.IsDevopsMode() {
+		if err := validateMongo(kn.Spec.Mongo); err != nil {
+			return fmt.Errorf("MongoDB 配置错误: %w", err)
+		}
+	}
+
 	// 验证链路追踪配置（如果启用）
 	if kn.IsTelemetryEnabled() {
 		if err := kn.Spec.Telemetry.ValidateTelemetryConfig(); err != nil {
@@ -45,6 +52,17 @@ func ValidateKubeNova(kn *kubenovav1.KubeNova) error {
 		return fmt.Errorf("web 配置错误: %w", err)
 	}
 
+	return nil
+}
+
+// validateMongo 验证 MongoDB 配置
+func validateMongo(mongo *kubenovav1.MongoConfig) error {
+	if mongo == nil {
+		return fmt.Errorf("devops 部署模式需要配置 MongoDB")
+	}
+	if mongo.Url == "" {
+		return fmt.Errorf("MongoDB 连接字符串不能为空")
+	}
 	return nil
 }
 

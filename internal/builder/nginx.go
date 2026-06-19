@@ -165,6 +165,12 @@ upstream console_api {
     server console-api:8818 max_fails=3 fail_timeout=30s;
     keepalive 32;
 }
+
+upstream devops_api {
+    least_conn;
+    server devops-api:8813 max_fails=3 fail_timeout=30s;
+    keepalive 32;
+}
 `
 
 	if kn.IsMinIOProxyEnabled() {
@@ -513,6 +519,41 @@ func buildLocationBlocks(kn *kubenovav1.KubeNova) string {
         # Buffering - disabled for streaming responses
         proxy_buffering off;
         proxy_request_buffering off;
+
+        # Error handling
+        proxy_next_upstream error timeout invalid_header http_500 http_502 http_503 http_504;
+        proxy_next_upstream_tries 2;
+
+        # Rate limiting
+        limit_req zone=api burst=20 nodelay;
+    }
+
+    # Devops API proxy
+    location /devops {
+        proxy_pass http://devops_api;
+
+        # Proxy headers
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-Forwarded-Host $host;
+        proxy_set_header X-Forwarded-Port $server_port;
+
+        # HTTP version
+        proxy_http_version 1.1;
+        proxy_set_header Connection "";
+
+        # Timeouts
+        proxy_connect_timeout 30s;
+        proxy_send_timeout 30s;
+        proxy_read_timeout 30s;
+
+        # Buffering
+        proxy_buffering on;
+        proxy_buffer_size 4k;
+        proxy_buffers 8 4k;
+        proxy_busy_buffers_size 8k;
 
         # Error handling
         proxy_next_upstream error timeout invalid_header http_500 http_502 http_503 http_504;

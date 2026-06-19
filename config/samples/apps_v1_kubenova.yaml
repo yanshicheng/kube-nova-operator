@@ -1,9 +1,55 @@
 apiVersion: apps.ikubeops.com/v1
 kind: KubeNova
 metadata:
-  labels:
-    app.kubernetes.io/name: kube-nova-operator
-    app.kubernetes.io/managed-by: kustomize
   name: kubenova-sample
+  namespace: kube-nova
 spec:
-  # TODO(user): Add fields here
+  # 部署模式: all(默认) / k8s / devops
+  deploymentMode: all
+
+  imageRegistry:
+    registry: "registry.cn-hangzhou.aliyuncs.com"
+    organization: "kube-nova"
+    tag: "latest"
+    pullPolicy: Always
+
+  database:
+    host: "mysql"
+    port: 3306
+    database: "kube_nova"
+    user: "root"
+    password: "your-password"
+
+  cache:
+    host: "redis"
+    port: 6379
+    type: "node"
+    password: "your-password"
+
+  storage:
+    endpoint: "minio-service:9000"
+    accessKey: "minioadmin"
+    secretKey: "minioadmin"
+    bucket: "kube-nova"
+
+  mongo:
+    url: "mongodb://root:password@mongo:27017/?authSource=admin"
+    db: "kube_nova_devops"
+
+  services:
+    globalTimeout: 30000
+    jwt:
+      accessSecret: "your-32-char-or-more-access-secret-key"
+      accessExpire: 86400
+      refreshSecret: "your-32-char-or-more-refresh-secret-key"
+      refreshExpire: 604800
+      refreshAfter: 604800
+    portal:
+      name: "Kube-Nova"
+      demoMode: false
+
+  web:
+    replicas: 2
+    exposeType: "nodeport"
+    nodePort:
+      httpPort: 30088

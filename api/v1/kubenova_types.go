@@ -11,11 +11,18 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+// +kubebuilder:validation:Enum=all;k8s;devops
+type DeploymentMode string
+
 // KubeNovaSpec 定义了 KubeNova 的期望状态
 type KubeNovaSpec struct {
 	// ImageRegistry 全局镜像仓库配置
 	// +optional
 	ImageRegistry *ImageRegistryConfig `json:"imageRegistry,omitempty"`
+
+	// DeploymentMode 部署模式：all(默认，全部部署)、k8s(K8s管理)、devops(DevOps)
+	// +kubebuilder:default=all
+	DeploymentMode DeploymentMode `json:"deploymentMode,omitempty"`
 
 	// Database 数据库配置(MySQL)
 	// +kubebuilder:validation:Required
@@ -28,6 +35,11 @@ type KubeNovaSpec struct {
 	// Storage 对象存储配置(MinIO/S3)
 	// +kubebuilder:validation:Required
 	Storage StorageConfig `json:"storage"`
+
+	// Mongo MongoDB 配置(devops 服务使用)
+	// 部署模式为 devops 或 all 时必填
+	// +optional
+	Mongo *MongoConfig `json:"mongo,omitempty"`
 
 	// Telemetry 链路追踪配置(Jaeger)
 	// 可选，如果不配置则不启用链路追踪
@@ -65,6 +77,34 @@ type ImageRegistryConfig struct {
 	// PullSecrets 镜像拉取密钥列表(Secret 名称)
 	// +optional
 	PullSecrets []string `json:"pullSecrets,omitempty"`
+}
+
+// MongoConfig MongoDB 配置(devops 服务使用)
+type MongoConfig struct {
+	// Url MongoDB 连接字符串
+	// 例如：mongodb://root:12345678@mongo:27017/?authSource=admin
+	// +kubebuilder:validation:Required
+	Url string `json:"url"`
+
+	// Db 数据库名称
+	// +kubebuilder:default="kube_nova_devops"
+	Db string `json:"db,omitempty"`
+}
+
+// GetMongoUrl 获取 MongoDB 连接字符串
+func (m *MongoConfig) GetMongoUrl() string {
+	if m == nil {
+		return ""
+	}
+	return m.Url
+}
+
+// GetMongoDb 获取 MongoDB 数据库名称
+func (m *MongoConfig) GetMongoDb() string {
+	if m == nil || m.Db == "" {
+		return "kube_nova_devops"
+	}
+	return m.Db
 }
 
 // DatabaseConfig MySQL 数据库配置
@@ -270,6 +310,22 @@ type ServicesConfig struct {
 	// ConsoleRPC Console RPC 服务配置
 	// +optional
 	ConsoleRPC *ServiceConfig `json:"consoleRPC,omitempty"`
+
+	// DevopsAPI Devops API 服务配置
+	// +optional
+	DevopsAPI *ServiceConfig `json:"devopsAPI,omitempty"`
+
+	// DevopsManagerRPC Devops Manager RPC 服务配置
+	// +optional
+	DevopsManagerRPC *ServiceConfig `json:"devopsManagerRPC,omitempty"`
+
+	// DevopsPipelineRPC Devops Pipeline RPC 服务配置
+	// +optional
+	DevopsPipelineRPC *ServiceConfig `json:"devopsPipelineRPC,omitempty"`
+
+	// DevopsQualityRPC Devops Quality RPC 服务配置(暂不部署)
+	// +optional
+	DevopsQualityRPC *ServiceConfig `json:"devopsQualityRPC,omitempty"`
 }
 
 // JWTConfig JWT 认证配置
@@ -708,6 +764,33 @@ type KubeNovaList struct {
 
 func init() {
 	SchemeBuilder.Register(&KubeNova{}, &KubeNovaList{})
+}
+
+// ========================================
+// Deployment Mode Helpers
+// ========================================
+
+// IsK8sMode 检查是否为 K8s 管理模式(包含 all)
+func (k *KubeNova) IsK8sMode() bool {
+	return k.Spec.DeploymentMode == "" || k.Spec.DeploymentMode == "all" || k.Spec.DeploymentMode == "k8s"
+}
+
+// IsDevopsMode 检查是否为 DevOps 模式(包含 all)
+func (k *KubeNova) IsDevopsMode() bool {
+	return k.Spec.DeploymentMode == "" || k.Spec.DeploymentMode == "all" || k.Spec.DeploymentMode == "devops"
+}
+
+// IsAllMode 检查是否为全部部署模式
+func (k *KubeNova) IsAllMode() bool {
+	return k.Spec.DeploymentMode == "" || k.Spec.DeploymentMode == "all"
+}
+
+// GetDeploymentMode 获取部署模式，默认返回 all
+func (k *KubeNova) GetDeploymentMode() DeploymentMode {
+	if k.Spec.DeploymentMode == "" {
+		return "all"
+	}
+	return k.Spec.DeploymentMode
 }
 
 // ========================================

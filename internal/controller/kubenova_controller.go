@@ -803,8 +803,19 @@ func (r *KubeNovaReconciler) checkComponentStatus(ctx context.Context, kubenova 
 
 	allReady := true
 
-	services := []string{"portal-api", "portal-rpc", "manager-api", "manager-rpc",
-		"workload-api", "console-api", "console-rpc"}
+	// portal 服务始终部署
+	services := []string{"portal-api", "portal-rpc"}
+
+	// K8s 管理模式(含 all)
+	if kubenova.IsK8sMode() {
+		services = append(services, "manager-api", "manager-rpc",
+			"workload-api", "console-api", "console-rpc")
+	}
+
+	// DevOps 模式(含 all)
+	if kubenova.IsDevopsMode() {
+		services = append(services, "devops-api", "devops-manager-rpc", "devops-pipeline-rpc")
+	}
 
 	for _, serviceName := range services {
 		deployment := &appsv1.Deployment{}
@@ -950,9 +961,20 @@ func (r *KubeNovaReconciler) updateAccessInfo(ctx context.Context, kubenova *kub
 		kubenova.Status.AccessInfo.ServiceEndpoints = make(map[string]string)
 	}
 
-	services := []string{"portal-api", "portal-rpc", "manager-api", "manager-rpc",
-		"workload-api", "console-api", "console-rpc"}
-	for _, svc := range services {
+	svcList := []string{"portal-api", "portal-rpc"}
+
+	// K8s 管理模式(含 all)
+	if kubenova.IsK8sMode() {
+		svcList = append(svcList, "manager-api", "manager-rpc",
+			"workload-api", "console-api", "console-rpc")
+	}
+
+	// DevOps 模式(含 all)
+	if kubenova.IsDevopsMode() {
+		svcList = append(svcList, "devops-api", "devops-manager-rpc", "devops-pipeline-rpc")
+	}
+
+	for _, svc := range svcList {
 		kubenova.Status.AccessInfo.ServiceEndpoints[svc] = fmt.Sprintf("%s.%s.svc.cluster.local", svc, namespace)
 	}
 

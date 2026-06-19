@@ -129,6 +129,10 @@ func BuildSecret(kn *kubenovav1.KubeNova, namespace string, nodeIP string, nodeP
 		data["DEMO_MODE"] = []byte("false")
 	}
 
+	// MongoDB 配置(devops 服务使用)
+	data["MONGO_URL"] = []byte(kn.Spec.Mongo.GetMongoUrl())
+	data["MONGO_DB"] = []byte(kn.Spec.Mongo.GetMongoDb())
+
 	// 注入镜像配置
 	data["INJECT_IMAGE"] = []byte(kn.Spec.Services.InjectImage)
 

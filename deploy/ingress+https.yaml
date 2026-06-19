@@ -4,6 +4,9 @@ metadata:
   name: kubenova-sample
   namespace: kube-nova
 spec:
+  # 部署模式: all(默认) = k8s + devops + portal
+  deploymentMode: all
+
   # 全局镜像仓库配置（可选）
   imageRegistry:
     registry: "registry.cn-hangzhou.aliyuncs.com"
@@ -40,11 +43,16 @@ spec:
     accessKey: "kube-nova-admin"
     secretKey: "KubeNova@2024SecretKey!"
     bucket: "kube-nova"
-    endpointProxy: "http://127.0.0.1:30088/storage/"
+    #endpointProxy: "https://www.ikubeops.com/storage/"
     # TLS 证书配置（可选）
     # tls:
     #   enabled: true
     #   secretName: "minio-tls-certs"  # 包含 public.crt 和 private.key
+
+  # MongoDB 配置(all/devops 模式必填)
+  mongo:
+    url: "mongodb://root:12345678@mongo:27017/?authSource=admin"
+    db: "kube_nova_devops"
 
   # 链路追踪配置（可选）
   telemetry:
@@ -74,7 +82,7 @@ spec:
     # Portal 配置（可选）
     portal:
       name: "Kube-Nova 云原生平台"
-      url: "http://127.0.0.1:30088"
+      url: "https://www.ikubeops.com"
       demoMode: false
 
     # Webhook Token（可选）
@@ -111,9 +119,14 @@ spec:
   # ==================================================
   web:
     replicas: 2
-    exposeType: "nodeport"
-    nodePort:
-      httpPort: 30088
+    exposeType: "ingress"
+    ingress:
+     className: "nginx"
+     host: "www.ikubeops.com"
+     tls:
+       enabled: true
+       secretName: "kube-nova-tls"
+
     minioProxy:
       enabled: true
       pathPrefix: "/storage"
