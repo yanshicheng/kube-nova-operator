@@ -2976,7 +2976,7 @@ spec:
         - --health-probe-bind-address=:8081
         command:
         - /manager
-        image: registry.cn-hangzhou.aliyuncs.com/kube-nova/kube-nova-operator:V0.2.0-BETA
+        image: registry.cn-hangzhou.aliyuncs.com/kube-nova/kube-nova-operator:v0.2.0-beta
         livenessProbe:
           httpGet:
             path: /healthz
