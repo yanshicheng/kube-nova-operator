@@ -319,17 +319,7 @@ func buildDeployment(kn *kubenovav1.KubeNova, namespace string, cfg *serviceConf
 							Name:            cfg.Name,
 							Image:           image,
 							ImagePullPolicy: cfg.Registry.PullPolicy,
-							Ports: []corev1.ContainerPort{
-								{
-									ContainerPort: cfg.TargetPort,
-									Protocol:      corev1.ProtocolTCP,
-								},
-								{
-									Name:          "metrics",
-									ContainerPort: cfg.MetricsPort,
-									Protocol:      corev1.ProtocolTCP,
-								},
-							},
+							Ports: buildContainerPorts(cfg),
 							EnvFrom: []corev1.EnvFromSource{
 								{
 									SecretRef: &corev1.SecretEnvSource{
@@ -353,42 +343,9 @@ func buildDeployment(kn *kubenovav1.KubeNova, namespace string, cfg *serviceConf
 									},
 								},
 							},
-							StartupProbe: &corev1.Probe{
-								ProbeHandler: corev1.ProbeHandler{
-									HTTPGet: &corev1.HTTPGetAction{
-										Path: "/healthz",
-										Port: intstr.FromInt32(cfg.MetricsPort),
-									},
-								},
-								InitialDelaySeconds: 0,
-								PeriodSeconds:       5,
-								FailureThreshold:    12,
-								TimeoutSeconds:      3,
-							},
-							LivenessProbe: &corev1.Probe{
-								ProbeHandler: corev1.ProbeHandler{
-									HTTPGet: &corev1.HTTPGetAction{
-										Path: "/healthz",
-										Port: intstr.FromInt32(cfg.MetricsPort),
-									},
-								},
-								InitialDelaySeconds: 30,
-								PeriodSeconds:       10,
-								FailureThreshold:    3,
-								TimeoutSeconds:      3,
-							},
-							ReadinessProbe: &corev1.Probe{
-								ProbeHandler: corev1.ProbeHandler{
-									HTTPGet: &corev1.HTTPGetAction{
-										Path: "/healthz",
-										Port: intstr.FromInt32(cfg.MetricsPort),
-									},
-								},
-								InitialDelaySeconds: 10,
-								PeriodSeconds:       5,
-								FailureThreshold:    3,
-								TimeoutSeconds:      3,
-							},
+							StartupProbe: buildStartupProbe(cfg),
+							LivenessProbe: buildLivenessProbe(cfg),
+							ReadinessProbe: buildReadinessProbe(cfg),
 							Resources:       getServiceResources(cfg.ServiceConfig),
 							VolumeMounts:    getServiceVolumeMounts(cfg),
 							SecurityContext: getSecurityContext(),

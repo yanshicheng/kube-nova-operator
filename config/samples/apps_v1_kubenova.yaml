@@ -18,30 +18,30 @@ spec:
     port: 3306
     database: "kube_nova"
     user: "root"
-    password: "your-password"
+    password: "8VlZ2lvIsKBCYSE3"
 
   cache:
     host: "redis"
     port: 6379
     type: "node"
-    password: "your-password"
+    password: "2VOSiz0vhGtxaBJb"
 
   storage:
     endpoint: "minio-service:9000"
-    accessKey: "minioadmin"
-    secretKey: "minioadmin"
+    accessKey: "kube-nova-admin"
+    secretKey: "KubeNova@2024SecretKey!"
     bucket: "kube-nova"
 
   mongo:
-    url: "mongodb://root:password@mongo:27017/?authSource=admin"
+    url: "mongodb://root:8VlZ2lvIsKBCYSE3@mongo:27017/?authSource=admin"
     db: "kube_nova_devops"
 
   services:
     globalTimeout: 30000
     jwt:
-      accessSecret: "your-32-char-or-more-access-secret-key"
+      accessSecret: "zk5Lp8m+0g7lvvLcnbUHPzQFEsRAmvNIn9tXdx0o80U="
       accessExpire: 86400
-      refreshSecret: "your-32-char-or-more-refresh-secret-key"
+      refreshSecret: "zk5Lp8m+0g7lvvLcnbUHPzQFEsRAmvNIn9tXdx0o80U="
       refreshExpire: 604800
       refreshAfter: 604800
     portal:

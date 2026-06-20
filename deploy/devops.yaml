@@ -52,7 +52,7 @@ spec:
 
   # MongoDB 配置(devops/all 模式必填)
   mongo:
-    url: "mongodb://root:12345678@mongo:27017/?authSource=admin"
+    url: "mongodb://root:8VlZ2lvIsKBCYSE3@mongo:27017/?authSource=admin"
     db: "kube_nova_devops"
 
   # 链路追踪配置(可选)
