@@ -764,7 +764,7 @@ Mongo:
   Db: ${MONGO_DB}
 
 Bootstrap:
-  DefaultDataEnabled: false
+  DefaultDataEnabled: true
   TektonStepSyncEnabled: false
 
 Cache:
