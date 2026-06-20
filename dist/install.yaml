@@ -4062,6 +4062,7 @@ spec:
         command:
         - /manager
         image: registry.cn-hangzhou.aliyuncs.com/kube-nova/kube-nova-operator:v0.2.0-beta
+        imagePullPolicy: Always
         livenessProbe:
           httpGet:
             path: /healthz
