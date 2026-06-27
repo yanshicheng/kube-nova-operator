@@ -45,7 +45,7 @@ spec:
     accessKey: "kube-nova-admin"
     secretKey: "KubeNova@2024SecretKey!"
     bucket: "kube-nova"
-    endpointProxy: "http://127.0.0.1:30088/storage/"
+    endpointProxy: "http://172.16.1.21:30088/storage/"
 
   # MongoDB 配置(devops/all 模式必填)
   mongo:
@@ -60,7 +60,7 @@ spec:
     batcher: "jaeger"
 
   services:
-    globalTimeout: 30000
+    globalTimeout: 300000
 
     # JWT 配置(必填)
     jwt:
@@ -80,7 +80,7 @@ spec:
     # Portal 配置
     portal:
       name: "Kube-Nova 云原生平台"
-      url: "http://127.0.0.1:30088"
+      url: "http://172.16.1.21:30088"
       demoMode: false
 
     # Webhook Token
